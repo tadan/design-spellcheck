@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+    color: var(--figma-color-text, #333);
+    background: var(--figma-color-bg, #fff);
+    overflow-x: hidden;
+  }
+
+  /* ---- Tabs ---- */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--figma-color-border, #e5e5e5);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--figma-color-bg, #fff);
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 4px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 11px;
+    color: var(--figma-color-text-secondary, #999);
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+  .tab:hover {
+    color: var(--figma-color-text, #333);
+  }
+  .tab.active {
+    color: var(--figma-color-text-brand, #0D99FF);
+    border-bottom-color: var(--figma-color-bg-brand, #0D99FF);
+  }
+
+  /* ---- Tab Content ---- */
+  .tab-content { display: none; padding: 12px; }
+  .tab-content.active { display: block; }
+
+  /* ---- Progress ---- */
+  .progress-bar {
+    position: sticky;
+    top: 38px;
+    z-index: 9;
+    background: var(--figma-color-bg, #fff);
+    padding: 0;
+    display: none;
+  }
+  .progress-bar.visible { display: block; }
+  .progress-track {
+    height: 3px;
+    background: var(--figma-color-border, #e5e5e5);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--figma-color-bg-brand, #0D99FF);
+    width: 0%;
+    transition: width 0.2s;
+  }
+  .progress-label {
+    font-size: 10px;
+    color: var(--figma-color-text-secondary, #999);
+    padding: 4px 12px 6px;
+  }
+
+  /* ---- Controls ---- */
+  .controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+  .btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--figma-color-border, #e5e5e5);
+    background: var(--figma-color-bg-brand, #0D99FF);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary {
+    background: var(--figma-color-bg, #fff);
+    color: var(--figma-color-text, #333);
+  }
+  .btn-danger {
+    background: #F24822;
+    color: #fff;
+    font-size: 10px;
+    padding: 3px 8px;
+    border: none;
+    border-radius: 4px;
+  }
+  .btn-danger:hover { opacity: 0.85; }
+
+  select {
+    padding: 5px 8px;
+    border: 1px solid var(--figma-color-border, #e5e5e5);
+    border-radius: 6px;
+    background: var(--figma-color-bg, #fff);
+    color: var(--figma-color-text, #333);
+    font-size: 11px;
+  }
+
+  /* ---- Results ---- */
+  .section {
+    margin-bottom: 16px;
+  }
+  .section-header {
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-header .chevron {
+    transition: transform 0.15s;
+    font-size: 10px;
+  }
+  .section-header.collapsed .chevron {
+    transform: rotate(-90deg);
+  }
+  .section-body {
+    overflow: hidden;
+  }
+  .section-body.collapsed {
+    display: none;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .badge-error { background: #F24822; }
+  .badge-warning { background: #FFA629; }
+  .badge-info { background: #0D99FF; }
+  .badge-success { background: #14AE5C; }
+  .badge-muted {
+    background: var(--figma-color-border, #e5e5e5);
+    color: var(--figma-color-text-secondary, #999);
+  }
+
+  .summary-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .item {
+    padding: 8px 10px;
+    border: 1px solid var(--figma-color-border, #e5e5e5);
+    border-radius: 6px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    cursor: default;
+  }
+  .item:hover {
+    background: var(--figma-color-bg-hover, #f5f5f5);
+  }
+  .item .type-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: var(--figma-color-border, #e5e5e5);
+    color: var(--figma-color-text-secondary, #666);
+    flex-shrink: 0;
+  }
+  .item .name {
+    font-weight: 500;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .item .path {
+    font-size: 10px;
+    color: var(--figma-color-text-secondary, #999);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .item .select-btn {
+    font-size: 10px;
+    color: var(--figma-color-text-brand, #0D99FF);
+    cursor: pointer;
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+  .item .select-btn:hover { text-decoration: underline; }
+
+  /* ---- Hierarchy Tree ---- */
+  .tree-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 0;
+    font-size: 11px;
+    cursor: default;
+  }
+  .tree-row:hover {
+    background: var(--figma-color-bg-hover, #f5f5f5);
+  }
+  .tree-chevron {
+    width: 14px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 10px;
+    flex-shrink: 0;
+    user-select: none;
+    color: var(--figma-color-text-secondary, #999);
+  }
+  .tree-type {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .tree-type-COMPONENT_SET { background: #9747FF; color: #fff; }
+  .tree-type-COMPONENT { background: #9747FF; color: #fff; }
+  .tree-type-INSTANCE { background: #14AE5C; color: #fff; }
+  .tree-type-FRAME { background: #0D99FF; color: #fff; }
+  .tree-type-TEXT { background: #FFA629; color: #fff; }
+  .tree-type-default { background: var(--figma-color-border, #e5e5e5); color: var(--figma-color-text-secondary, #666); }
+
+  .tree-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .tree-name:hover {
+    color: var(--figma-color-text-brand, #0D99FF);
+    text-decoration: underline;
+  }
+  .tree-hidden {
+    opacity: 0.4;
+  }
+  .tree-badges {
+    display: flex;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .tree-children {
+    overflow: hidden;
+  }
+  .tree-children.collapsed {
+    display: none;
+  }
+
+  .stat-card {
+    text-align: center;
+    padding: 12px 8px;
+    border: 1px solid var(--figma-color-border, #e5e5e5);
+    border-radius: 8px;
+    flex: 1;
+    min-width: 60px;
+  }
+  .stat-card .stat-num {
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .stat-card .stat-label {
+    font-size: 10px;
+    color: var(--figma-color-text-secondary, #999);
+    margin-top: 2px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--figma-color-text-secondary, #999);
+  }
+  .empty-state .icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+
+  .error-msg {
+    padding: 10px 12px;
+    background: #FEF0EE;
+    color: #F24822;
+    border-radius: 6px;
+    font-size: 11px;
+    margin-bottom: 12px;
+  }
+
+  .override-tag {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #FFA629;
+    color: #fff;
+    font-weight: 600;
+  }
+  .prop-tag {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #9747FF;
+    color: #fff;
+    font-weight: 600;
+  }
+  .var-tag {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #0D99FF;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .collection-group {
+    margin-bottom: 8px;
+  }
+  .collection-name {
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--figma-color-text-secondary, #999);
+    padding: 4px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" data-tab="properties">Properties</div>
+  <div class="tab" data-tab="names">Names</div>
+  <div class="tab" data-tab="hierarchy">Hierarchy</div>
+  <div class="tab" data-tab="hidden">Hidden</div>
+  <div class="tab" data-tab="variables">Variables</div>
+</div>
+
+<!-- Progress -->
+<div class="progress-bar" id="progressBar">
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-label" id="progressLabel"></div>
+</div>
+
+<!-- Tab: Properties -->
+<div class="tab-content active" id="tab-properties">
+  <div class="controls">
+    <select id="propScope">
+      <option value="page">Current Page</option>
+      <option value="selection">Selection</option>
+    </select>
+    <button class="btn" id="btnScanProps">Scan Properties</button>
+  </div>
+  <div id="propResults">
+    <div class="empty-state">
+      <div class="icon">&#x1F50D;</div>
+      <div>Scan your page or selection to check<br>component property health.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Names -->
+<div class="tab-content" id="tab-names">
+  <div class="controls">
+    <select id="nameScope">
+      <option value="page">Current Page</option>
+      <option value="file">Entire File</option>
+    </select>
+    <button class="btn" id="btnScanNames">Scan Names</button>
+  </div>
+  <div id="nameResults">
+    <div class="empty-state">
+      <div class="icon">&#x1F3F7;</div>
+      <div>Scan for default, generic, or<br>unnamed layers that need attention.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Hierarchy -->
+<div class="tab-content" id="tab-hierarchy">
+  <div class="controls">
+    <button class="btn" id="btnScanHierarchy">Inspect Selection</button>
+  </div>
+  <div id="hierarchyResults">
+    <div class="empty-state">
+      <div class="icon">&#x1F333;</div>
+      <div>Select a component or instance, then click<br>"Inspect Selection" to see the property tree.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Hidden -->
+<div class="tab-content" id="tab-hidden">
+  <div class="controls">
+    <select id="hiddenScope">
+      <option value="page">Current Page</option>
+      <option value="file">Entire File</option>
+    </select>
+    <button class="btn" id="btnScanHidden">Scan Hidden Layers</button>
+  </div>
+  <div id="hiddenResults">
+    <div class="empty-state">
+      <div class="icon">&#x1F441;</div>
+      <div>Scan for hidden layers to find artifacts,<br>suspicious layers, and expected toggles.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Variables -->
+<div class="tab-content" id="tab-variables">
+  <div class="controls">
+    <button class="btn" id="btnScanVars">Audit Variables</button>
+  </div>
+  <div id="varResults">
+    <div class="empty-state">
+      <div class="icon">&#x1F3AF;</div>
+      <div>Audit local variables for unused tokens,<br>naming issues, and missing descriptions.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- Helpers ----
+  function postToPlugin(msg) {
+    parent.postMessage({ pluginMessage: msg }, '*');
+  }
+
+  function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // ---- Tab Switching ----
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---- Progress ----
+  function showProgress(percent, label) {
+    const bar = document.getElementById('progressBar');
+    const fill = document.getElementById('progressFill');
+    const lbl = document.getElementById('progressLabel');
+    bar.classList.add('visible');
+    fill.style.width = percent + '%';
+    lbl.textContent = label || '';
+    if (percent >= 100) {
+      setTimeout(() => bar.classList.remove('visible'), 800);
+    }
+  }
+
+  // ---- Disable/Enable Buttons During Scan ----
+  function setScanning(on) {
+    document.querySelectorAll('.btn').forEach(b => b.disabled = on);
+  }
+
+  // ---- Scan Buttons ----
+  document.getElementById('btnScanProps').addEventListener('click', () => {
+    setScanning(true);
+    postToPlugin({ type: 'scan-properties', scope: document.getElementById('propScope').value });
+  });
+  document.getElementById('btnScanNames').addEventListener('click', () => {
+    setScanning(true);
+    postToPlugin({ type: 'scan-names', scope: document.getElementById('nameScope').value });
+  });
+  document.getElementById('btnScanHierarchy').addEventListener('click', () => {
+    setScanning(true);
+    postToPlugin({ type: 'scan-hierarchy' });
+  });
+  document.getElementById('btnScanHidden').addEventListener('click', () => {
+    setScanning(true);
+    postToPlugin({ type: 'scan-hidden', scope: document.getElementById('hiddenScope').value });
+  });
+  document.getElementById('btnScanVars').addEventListener('click', () => {
+    setScanning(true);
+    postToPlugin({ type: 'scan-variables' });
+  });
+
+  // ---- Section Toggle ----
+  function toggleSection(header) {
+    header.classList.toggle('collapsed');
+    const body = header.nextElementSibling;
+    if (body) body.classList.toggle('collapsed');
+  }
+
+  // ---- Render: Hidden Results ----
+  function renderHiddenResults(data) {
+    const el = document.getElementById('hiddenResults');
+    const { expected, suspicious, artifact } = data.categories;
+
+    let html = `<div class="summary-bar">
+      <span class="badge badge-success">${expected.length} Expected</span>
+      <span class="badge badge-warning">${suspicious.length} Suspicious</span>
+      <span class="badge badge-error">${artifact.length} Artifacts</span>
+      <span class="badge badge-muted">${data.visited?.toLocaleString() || '?'} nodes visited</span>
+    </div>`;
+
+    html += renderHiddenSection('Suspicious', suspicious, 'badge-warning');
+    html += renderHiddenSection('Artifacts', artifact, 'badge-error');
+    html += renderHiddenSection('Expected (Component Slots)', expected, 'badge-success', true);
+
+    el.innerHTML = html;
+    el.querySelectorAll('.section-header').forEach(h => h.addEventListener('click', () => toggleSection(h)));
+    el.querySelectorAll('.select-btn').forEach(b => b.addEventListener('click', () => {
+      postToPlugin({ type: 'select-node', nodeId: b.dataset.id });
+    }));
+  }
+
+  function renderHiddenSection(title, items, badgeClass, startCollapsed) {
+    if (items.length === 0) return '';
+    const col = startCollapsed ? ' collapsed' : '';
+    let html = `<div class="section">
+      <div class="section-header${col}" onclick="toggleSection(this)">
+        <span class="chevron">&#9660;</span>
+        ${title}
+        <span class="badge ${badgeClass}">${items.length}</span>
+      </div>
+      <div class="section-body${col}">`;
+    for (const item of items.slice(0, 200)) {
+      html += `<div class="item">
+        <span class="type-badge">${esc(item.type.substring(0, 3))}</span>
+        <div style="flex:1;min-width:0">
+          <div class="name">${esc(item.name)}</div>
+          <div class="path">${esc(item.page)}${item.path ? ' > ' + esc(item.path) : ''}</div>
+        </div>
+        <span class="select-btn" data-id="${esc(item.id)}">Select</span>
+      </div>`;
+    }
+    if (items.length > 200) {
+      html += `<div style="padding:8px;color:var(--figma-color-text-secondary);font-size:10px;text-align:center">
+        ...and ${items.length - 200} more
+      </div>`;
+    }
+    html += `</div></div>`;
+    return html;
+  }
+
+  // ---- Render: Property Results ----
+  function renderPropertyResults(data) {
+    const el = document.getElementById('propResults');
+    const { noProps, allDefault, healthy } = data;
+
+    let html = `<div class="summary-bar">
+      <div class="stat-card">
+        <div class="stat-num">${healthy.totalComponents}</div>
+        <div class="stat-label">Components</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">${healthy.totalInstances}</div>
+        <div class="stat-label">Instances</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:${healthy.overrideRate >= 50 ? '#14AE5C' : '#FFA629'}">${healthy.overrideRate}%</div>
+        <div class="stat-label">Override Rate</div>
+      </div>
+    </div>`;
+
+    if (noProps.length > 0) {
+      html += `<div class="section">
+        <div class="section-header">
+          <span class="chevron">&#9660;</span>
+          Components Missing Properties
+          <span class="badge badge-error">${noProps.length}</span>
+        </div>
+        <div class="section-body">`;
+      for (const item of noProps) {
+        html += `<div class="item">
+          <span class="type-badge">${item.type === 'COMPONENT_SET' ? 'SET' : 'COM'}</span>
+          <span class="name">${esc(item.name)}</span>
+          <span class="select-btn" data-id="${esc(item.id)}">Select</span>
+        </div>`;
+      }
+      html += `</div></div>`;
+    }
+
+    if (allDefault.length > 0) {
+      html += `<div class="section">
+        <div class="section-header">
+          <span class="chevron">&#9660;</span>
+          Instances at Default Values
+          <span class="badge badge-warning">${allDefault.length}</span>
+        </div>
+        <div class="section-body">`;
+      for (const item of allDefault.slice(0, 100)) {
+        html += `<div class="item">
+          <span class="type-badge">INS</span>
+          <div style="flex:1;min-width:0">
+            <div class="name">${esc(item.name)}</div>
+            <div class="path">${esc(item.componentName)} &middot; ${item.propCount} props, all default</div>
+          </div>
+          <span class="select-btn" data-id="${esc(item.id)}">Select</span>
+        </div>`;
+      }
+      if (allDefault.length > 100) {
+        html += `<div style="padding:8px;color:var(--figma-color-text-secondary);font-size:10px;text-align:center">
+          ...and ${allDefault.length - 100} more
+        </div>`;
+      }
+      html += `</div></div>`;
+    }
+
+    if (noProps.length === 0 && allDefault.length === 0) {
+      html += `<div style="text-align:center;padding:20px;color:#14AE5C;font-weight:600">
+        All clear! No property issues found.
+      </div>`;
+    }
+
+    el.innerHTML = html;
+    el.querySelectorAll('.section-header').forEach(h => h.addEventListener('click', () => toggleSection(h)));
+    el.querySelectorAll('.select-btn').forEach(b => b.addEventListener('click', () => {
+      postToPlugin({ type: 'select-node', nodeId: b.dataset.id });
+    }));
+  }
+
+  // ---- Render: Variable Results ----
+  function renderVariableResults(data) {
+    const el = document.getElementById('varResults');
+    const { stats, unused, naming } = data;
+
+    let html = `<div class="summary-bar">
+      <div class="stat-card">
+        <div class="stat-num">${stats.total}</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:#14AE5C">${stats.used}</div>
+        <div class="stat-label">Used</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:#F24822">${stats.unused}</div>
+        <div class="stat-label">Unused</div>
+      </div>
+    </div>`;
+
+    // Unused Variables
+    if (unused.length > 0) {
+      // Group by collection
+      const groups = {};
+      for (const v of unused) {
+        if (!groups[v.collection]) groups[v.collection] = [];
+        groups[v.collection].push(v);
+      }
+
+      html += `<div class="section">
+        <div class="section-header">
+          <span class="chevron">&#9660;</span>
+          Unused Variables
+          <span class="badge badge-error">${unused.length}</span>
+        </div>
+        <div class="section-body">`;
+      for (const [col, vars] of Object.entries(groups)) {
+        html += `<div class="collection-group">
+          <div class="collection-name">${esc(col)} (${vars.length})</div>`;
+        for (const v of vars.slice(0, 50)) {
+          html += `<div class="item">
+            <span class="type-badge">${esc(v.resolvedType.substring(0, 3))}</span>
+            <span class="name">${esc(v.name)}</span>
+            <button class="btn-danger remove-var-btn" data-id="${esc(v.id)}">Remove</button>
+          </div>`;
+        }
+        if (vars.length > 50) {
+          html += `<div style="padding:8px;color:var(--figma-color-text-secondary);font-size:10px;text-align:center">
+            ...and ${vars.length - 50} more
+          </div>`;
+        }
+        html += `</div>`;
+      }
+      html += `</div></div>`;
+    }
+
+    // Naming Issues
+    const namingTotal = naming.orphans.length + naming.missingDesc.length + naming.misplaced.length;
+    if (namingTotal > 0) {
+      html += `<div class="section">
+        <div class="section-header">
+          <span class="chevron">&#9660;</span>
+          Naming Issues
+          <span class="badge badge-warning">${namingTotal}</span>
+        </div>
+        <div class="section-body">`;
+
+      if (naming.orphans.length > 0) {
+        html += `<div class="collection-group">
+          <div class="collection-name">Root-Level Orphans (no group path)</div>`;
+        for (const v of naming.orphans) {
+          html += `<div class="item">
+            <span class="type-badge">ORP</span>
+            <span class="name">${esc(v.name)}</span>
+            <span class="path">${esc(v.collection)}</span>
+          </div>`;
+        }
+        html += `</div>`;
+      }
+
+      if (naming.misplaced.length > 0) {
+        html += `<div class="collection-group">
+          <div class="collection-name">Component Tokens under Global/</div>`;
+        for (const v of naming.misplaced) {
+          html += `<div class="item">
+            <span class="type-badge">MIS</span>
+            <span class="name">${esc(v.name)}</span>
+            <span class="path">${esc(v.collection)}</span>
+          </div>`;
+        }
+        html += `</div>`;
+      }
+
+      if (naming.missingDesc.length > 0) {
+        html += `<div class="collection-group">
+          <div class="collection-name collapsed" onclick="toggleSection(this)" style="cursor:pointer">
+            <span class="chevron" style="font-size:10px">&#9660;</span>
+            Missing Descriptions (${naming.missingDesc.length})
+          </div>
+          <div class="section-body collapsed">`;
+        for (const v of naming.missingDesc.slice(0, 50)) {
+          html += `<div class="item">
+            <span class="type-badge">DSC</span>
+            <span class="name">${esc(v.name)}</span>
+            <span class="path">${esc(v.collection)}</span>
+          </div>`;
+        }
+        if (naming.missingDesc.length > 50) {
+          html += `<div style="padding:8px;color:var(--figma-color-text-secondary);font-size:10px;text-align:center">
+            ...and ${naming.missingDesc.length - 50} more
+          </div>`;
+        }
+        html += `</div></div>`;
+      }
+
+      html += `</div></div>`;
+    }
+
+    if (unused.length === 0 && namingTotal === 0) {
+      html += `<div style="text-align:center;padding:20px;color:#14AE5C;font-weight:600">
+        All variables are used and properly named!
+      </div>`;
+    }
+
+    el.innerHTML = html;
+    el.querySelectorAll('.section-header').forEach(h => h.addEventListener('click', () => toggleSection(h)));
+    el.querySelectorAll('.remove-var-btn').forEach(b => b.addEventListener('click', () => {
+      if (confirm('Remove variable "' + b.parentElement.querySelector('.name').textContent + '"?')) {
+        postToPlugin({ type: 'remove-variable', variableId: b.dataset.id });
+        b.disabled = true;
+        b.textContent = '...';
+      }
+    }));
+  }
+
+  // ---- Render: Name Results ----
+  function renderNameResults(data) {
+    const el = document.getElementById('nameResults');
+    const { stats, defaultNames, shortNames, autolayoutNames } = data;
+    const cleanRate = stats.total > 0 ? Math.round((stats.clean / stats.total) * 100) : 100;
+
+    let html = `<div class="summary-bar">
+      <div class="stat-card">
+        <div class="stat-num">${stats.total.toLocaleString()}</div>
+        <div class="stat-label">Layers</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:${cleanRate >= 80 ? '#14AE5C' : '#FFA629'}">${cleanRate}%</div>
+        <div class="stat-label">Clean</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:#F24822">${stats.issues}</div>
+        <div class="stat-label">Issues</div>
+      </div>
+    </div>`;
+
+    html += renderNameSection('Default / Generic Names', defaultNames, 'badge-error',
+      'Layers still using Figma defaults like "Frame 1" or "Rectangle 47"');
+    html += renderNameSection('Unnamed Auto-Layout Frames', autolayoutNames, 'badge-warning',
+      'Auto-layout frames with default names — these are structural and deserve a name');
+    html += renderNameSection('Very Short Names', shortNames, 'badge-info',
+      'Layers with 1-2 character names that may lack context');
+
+    if (stats.issues === 0) {
+      html += `<div style="text-align:center;padding:20px;color:#14AE5C;font-weight:600">
+        All layers are properly named!
+      </div>`;
+    }
+
+    el.innerHTML = html;
+    el.querySelectorAll('.section-header').forEach(h => h.addEventListener('click', () => toggleSection(h)));
+    el.querySelectorAll('.select-btn').forEach(b => b.addEventListener('click', () => {
+      postToPlugin({ type: 'select-node', nodeId: b.dataset.id });
+    }));
+  }
+
+  function renderNameSection(title, items, badgeClass, description) {
+    if (items.length === 0) return '';
+    let html = `<div class="section">
+      <div class="section-header">
+        <span class="chevron">&#9660;</span>
+        ${title}
+        <span class="badge ${badgeClass}">${items.length}</span>
+      </div>
+      <div class="section-body">
+      <div style="font-size:10px;color:var(--figma-color-text-secondary);margin-bottom:8px">${description}</div>`;
+    for (const item of items.slice(0, 200)) {
+      html += `<div class="item">
+        <span class="type-badge">${esc(item.type.substring(0, 3))}</span>
+        <div style="flex:1;min-width:0">
+          <div class="name">${esc(item.name)}</div>
+          <div class="path">${esc(item.page)}${item.path ? ' > ' + esc(item.path) : ''}</div>
+        </div>
+        <span class="select-btn" data-id="${esc(item.id)}">Select</span>
+      </div>`;
+    }
+    if (items.length > 200) {
+      html += `<div style="padding:8px;color:var(--figma-color-text-secondary);font-size:10px;text-align:center">
+        ...and ${items.length - 200} more
+      </div>`;
+    }
+    html += `</div></div>`;
+    return html;
+  }
+
+  // ---- Render: Hierarchy Results ----
+  function renderHierarchyResults(data) {
+    const el = document.getElementById('hierarchyResults');
+    if (!data.tree) {
+      el.innerHTML = '<div class="error-msg">Could not build hierarchy tree.</div>';
+      return;
+    }
+    el.innerHTML = '';
+    el.appendChild(buildTreeDOM(data.tree, 0));
+  }
+
+  function buildTreeDOM(node, depth) {
+    const row = document.createElement('div');
+    const hasChildren = node.children && node.children.length > 0;
+
+    // Row
+    const rowEl = document.createElement('div');
+    rowEl.className = 'tree-row' + (node.visible === false ? ' tree-hidden' : '');
+    rowEl.style.paddingLeft = (depth * 16) + 'px';
+
+    // Chevron
+    const chevron = document.createElement('span');
+    chevron.className = 'tree-chevron';
+    chevron.textContent = hasChildren ? '\u25BC' : '';
+    rowEl.appendChild(chevron);
+
+    // Type badge
+    const typeMap = {
+      COMPONENT_SET: 'SET', COMPONENT: 'COM', INSTANCE: 'INS',
+      FRAME: 'FRA', TEXT: 'TXT', GROUP: 'GRP',
+      VECTOR: 'VEC', RECTANGLE: 'REC', ELLIPSE: 'ELL', LINE: 'LIN',
+    };
+    const typeBadge = document.createElement('span');
+    const typeLabel = typeMap[node.type] || node.type.substring(0, 3);
+    typeBadge.className = 'tree-type tree-type-' + (
+      ['COMPONENT_SET','COMPONENT','INSTANCE','FRAME','TEXT'].includes(node.type) ? node.type : 'default'
+    );
+    typeBadge.textContent = typeLabel;
+    rowEl.appendChild(typeBadge);
+
+    // Name
+    const nameEl = document.createElement('span');
+    nameEl.className = 'tree-name';
+    nameEl.textContent = node.name;
+    nameEl.addEventListener('click', () => {
+      postToPlugin({ type: 'select-node', nodeId: node.id });
+    });
+    rowEl.appendChild(nameEl);
+
+    // Badges
+    const badges = document.createElement('span');
+    badges.className = 'tree-badges';
+    if (node.propertyDefs && node.propertyDefs.length > 0) {
+      const b = document.createElement('span');
+      b.className = 'prop-tag';
+      b.textContent = node.propertyDefs.length + 'P';
+      b.title = node.propertyDefs.map(p => p.name + ' (' + p.type + ')').join('\n');
+      badges.appendChild(b);
+    }
+    if (node.instanceOverrides && node.instanceOverrides.length > 0) {
+      const b = document.createElement('span');
+      b.className = 'override-tag';
+      b.textContent = node.instanceOverrides.length + 'O';
+      b.title = node.instanceOverrides.map(o => o.name + ': ' + o.defaultValue + ' \u2192 ' + o.value).join('\n');
+      badges.appendChild(b);
+    }
+    if (node.boundVarCount > 0) {
+      const b = document.createElement('span');
+      b.className = 'var-tag';
+      b.textContent = node.boundVarCount + 'V';
+      badges.appendChild(b);
+    }
+    rowEl.appendChild(badges);
+
+    row.appendChild(rowEl);
+
+    // Children container
+    if (hasChildren) {
+      const childContainer = document.createElement('div');
+      childContainer.className = 'tree-children';
+      for (const child of node.children) {
+        childContainer.appendChild(buildTreeDOM(child, depth + 1));
+      }
+      row.appendChild(childContainer);
+
+      chevron.addEventListener('click', () => {
+        const collapsed = childContainer.classList.toggle('collapsed');
+        chevron.textContent = collapsed ? '\u25B6' : '\u25BC';
+      });
+    }
+
+    return row;
+  }
+
+  // ---- Message Router ----
+  window.onmessage = (event) => {
+    const msg = event.data.pluginMessage;
+    if (!msg) return;
+
+    switch (msg.type) {
+      case 'progress':
+        showProgress(msg.percent, msg.label);
+        break;
+      case 'hidden-results':
+        setScanning(false);
+        renderHiddenResults(msg);
+        break;
+      case 'property-results':
+        setScanning(false);
+        renderPropertyResults(msg);
+        break;
+      case 'name-results':
+        setScanning(false);
+        renderNameResults(msg);
+        break;
+      case 'variable-results':
+        setScanning(false);
+        renderVariableResults(msg);
+        break;
+      case 'hierarchy-results':
+        setScanning(false);
+        renderHierarchyResults(msg);
+        break;
+      case 'variable-removed':
+        // Remove the item from the DOM
+        const btn = document.querySelector(`.remove-var-btn[data-id="${msg.variableId}"]`);
+        if (btn) {
+          const item = btn.closest('.item');
+          if (item) item.remove();
+        }
+        break;
+      case 'error':
+        setScanning(false);
+        showProgress(100, '');
+        // Show error in the active tab
+        const activeTab = document.querySelector('.tab-content.active');
+        const resultsDiv = activeTab.querySelector('[id$="Results"]');
+        if (resultsDiv) {
+          resultsDiv.innerHTML = `<div class="error-msg">${esc(msg.message)}</div>` + resultsDiv.innerHTML;
+        }
+        break;
+    }
+  };
+</script>
+</body>
+</html>
