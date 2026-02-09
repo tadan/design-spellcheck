@@ -1,0 +1,2237 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+    color: var(--figma-color-text, #333);
+    background: var(--figma-color-bg, #fff);
+    overflow-x: hidden;
+  }
+
+  /* ---- Tabs ---- */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--figma-color-border, #e5e5e5);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--figma-color-bg, #fff);
+  }
+  .version-label {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    font-size: 9px;
+    color: var(--figma-color-text-secondary, #999);
+    background: var(--figma-color-bg, #fff);
+    padding: 2px 6px;
+    border-radius: 10px;
+    border: 1px solid var(--figma-color-border, #e5e5e5);
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 4px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 11px;
+    color: var(--figma-color-text-secondary, #999);
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+  .tab:hover {
+    color: var(--figma-color-text, #333);
+  }
+  .tab.active {
+    color: var(--figma-color-text-brand, #0D99FF);
+    border-bottom-color: var(--figma-color-bg-brand, #0D99FF);
+  }
+
+  /* ---- Tab Content ---- */
+  .tab-content { display: none; padding: 12px; padding-bottom: 64px; }
+  .tab-content.active { display: block; }
+
+  /* ---- Progress ---- */
+  .progress-bar {
+    position: sticky;
+    top: 38px;
+    z-index: 9;
+    background: var(--figma-color-bg, #fff);
+    padding: 0;
+    display: none;
+  }
+  .progress-bar.visible { display: block; }
+  .progress-track {
+    height: 3px;
+    background: var(--figma-color-border, #e5e5e5);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--figma-color-bg-brand, #0D99FF);
+    width: 0%;
+    transition: width 0.2s;
+  }
+  .progress-label {
+    font-size: 10px;
+    color: var(--figma-color-text-secondary, #999);
+    padding: 4px 12px 6px;
+  }
+
+  /* ---- Controls ---- */
+  .controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+  .btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--figma-color-border, #e5e5e5);
+    background: var(--figma-color-bg-brand, #0D99FF);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary {
+    background: var(--figma-color-bg, #fff);
+    color: var(--figma-color-text, #333);
+  }
+  .btn-danger {
+    background: #F24822;
+    color: #fff;
+    font-size: 10px;
+    padding: 3px 8px;
+    border: none;
+    border-radius: 4px;
+  }
+  .btn-danger:hover { opacity: 0.85; }
+
+  select {
+    padding: 5px 8px;
+    border: 1px solid var(--figma-color-border, #e5e5e5);
+    border-radius: 6px;
+    background: var(--figma-color-bg, #fff);
+    color: var(--figma-color-text, #333);
+    font-size: 11px;
+  }
+
+  /* ---- Results ---- */
+  .section {
+    margin-bottom: 16px;
+  }
+  .section-header {
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-header .chevron {
+    transition: transform 0.15s;
+    font-size: 10px;
+  }
+  .section-header.collapsed .chevron {
+    transform: rotate(-90deg);
+  }
+  .section-body {
+    overflow: hidden;
+  }
+  .section-body.collapsed {
+    display: none;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .badge-error { background: #F24822; }
+  .badge-warning { background: #FFA629; }
+  .badge-info { background: #0D99FF; }
+  .badge-success { background: #14AE5C; }
+  .badge-muted {
+    background: var(--figma-color-border, #e5e5e5);
+    color: var(--figma-color-text-secondary, #999);
+  }
+
+  .summary-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .section-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .section-status {
+    font-size: 12px;
+    color: #14AE5C;
+    margin-left: 0;
+  }
+  .select-all-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .item {
+    padding: 8px 10px;
+    border: 1px solid var(--figma-color-border, #e5e5e5);
+    border-radius: 6px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    cursor: default;
+  }
+  .item:hover {
+    background: var(--figma-color-bg-hover, #f5f5f5);
+  }
+  .item .type-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: var(--figma-color-border, #e5e5e5);
+    color: var(--figma-color-text-secondary, #666);
+    flex-shrink: 0;
+  }
+  .item .name {
+    font-weight: 500;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .item .path {
+    font-size: 10px;
+    color: var(--figma-color-text-secondary, #999);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .item .reason {
+    font-size: 10px;
+    color: var(--figma-color-text-secondary, #999);
+    margin-top: 2px;
+    white-space: normal;
+    line-height: 1.3;
+  }
+  .prop-item .reason {
+    color: #F24822;
+    font-weight: 600;
+  }
+  .item.name-item {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .name-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--figma-color-border, #e5e5e5);
+  }
+  .name-details {
+    flex: 1;
+    min-width: 0;
+  }
+  .rename-controls {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+    align-items: center;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .missed-item .rename-controls {
+    width: 100%;
+    flex-wrap: nowrap;
+  }
+  .name-item .rename-controls {
+    width: 100%;
+    margin-left: 0;
+    flex-shrink: 1;
+    align-items: center;
+    gap: 8px;
+    padding-top: 2px;
+  }
+  .rename-status {
+    font-size: 9px;
+    color: var(--figma-color-text-secondary, #999);
+    margin-left: 6px;
+    flex-shrink: 0;
+  }
+  .rename-input {
+    width: 110px;
+    padding: 4px 6px;
+    border: 1px solid var(--figma-color-border, #e5e5e5);
+    border-radius: 6px;
+    font-size: 10px;
+  }
+  .var-input {
+    position: relative;
+    flex: 1;
+    min-width: 160px;
+  }
+  .var-input input {
+    width: 100%;
+    padding-left: 18px;
+  }
+  .var-input .var-icon {
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+    opacity: 1;
+    filter: none;
+  }
+  .name-item .rename-input {
+    width: auto;
+    flex: 1;
+  }
+  .btn-small {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  .select-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--figma-color-text-secondary, #999);
+    white-space: nowrap;
+    padding: 2px 6px;
+    border: none;
+    border-radius: 6px;
+    background: var(--figma-color-bg, #fff);
+    cursor: pointer;
+  }
+  .select-checkbox input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .checkbox-box {
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--figma-color-border, #e5e5e5);
+    border-radius: 3px;
+    background: var(--figma-color-bg, #fff);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #fff;
+  }
+  .select-checkbox input:checked + .checkbox-box {
+    background: var(--figma-color-bg-brand, #0D99FF);
+    border-color: var(--figma-color-bg-brand, #0D99FF);
+  }
+  .select-checkbox input:checked + .checkbox-box::after {
+    content: "✓";
+    line-height: 1;
+  }
+  .select-checkbox.compact {
+    padding: 2px 4px;
+  }
+  .select-all-label {
+    font-size: 10px;
+    color: var(--figma-color-text-secondary, #999);
+  }
+  .fix-all-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 8px 12px;
+    border-top: 1px solid var(--figma-color-border, #e5e5e5);
+    background: var(--figma-color-bg, #fff);
+    display: none;
+    z-index: 20;
+  }
+  .fix-all-bar .btn {
+    width: 100%;
+  }
+  .diag-banner {
+    font-size: 10px;
+    color: var(--figma-color-text-secondary, #999);
+    padding: 6px 8px;
+    border: 1px dashed var(--figma-color-border, #e5e5e5);
+    border-radius: 6px;
+    margin: 8px 0 10px;
+  }
+  .item .select-btn {
+    font-size: 10px;
+    color: var(--figma-color-text-brand, #0D99FF);
+    cursor: pointer;
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+  .item .select-btn:hover { text-decoration: underline; }
+
+  /* ---- Hierarchy Tree ---- */
+  .tree-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 0;
+    font-size: 11px;
+    cursor: default;
+  }
+  .tree-row:hover {
+    background: var(--figma-color-bg-hover, #f5f5f5);
+  }
+  .tree-chevron {
+    width: 14px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 10px;
+    flex-shrink: 0;
+    user-select: none;
+    color: var(--figma-color-text-secondary, #999);
+  }
+  .tree-type {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .tree-type-COMPONENT_SET { background: #9747FF; color: #fff; }
+  .tree-type-COMPONENT { background: #9747FF; color: #fff; }
+  .tree-type-INSTANCE { background: #14AE5C; color: #fff; }
+  .tree-type-FRAME { background: #0D99FF; color: #fff; }
+  .tree-type-TEXT { background: #FFA629; color: #fff; }
+  .tree-type-default { background: var(--figma-color-border, #e5e5e5); color: var(--figma-color-text-secondary, #666); }
+
+  .tree-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .tree-name:hover {
+    color: var(--figma-color-text-brand, #0D99FF);
+    text-decoration: underline;
+  }
+  .tree-hidden {
+    opacity: 0.4;
+  }
+  .tree-badges {
+    display: flex;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .tree-children {
+    overflow: hidden;
+  }
+  .tree-children.collapsed {
+    display: none;
+  }
+
+  .stat-card {
+    text-align: center;
+    padding: 12px 8px;
+    border: 1px solid var(--figma-color-border, #e5e5e5);
+    border-radius: 8px;
+    flex: 1;
+    min-width: 60px;
+  }
+  .hierarchy-panel {
+    border: 1px solid var(--figma-color-border, #e5e5e5);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+  }
+  .hierarchy-layout {
+    display: flex;
+    gap: 12px;
+  }
+  .hierarchy-list {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .hierarchy-guide {
+    flex: 0 0 140px;
+    border-left: 1px solid var(--figma-color-border, #e5e5e5);
+    padding-left: 10px;
+    color: #14AE5C;
+    font-size: 10px;
+  }
+  .hierarchy-guide .title {
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .hierarchy-guide .rule {
+    margin-bottom: 4px;
+  }
+  .hierarchy-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    font-size: 11px;
+  }
+  .hierarchy-row.wrong {
+    color: #F24822;
+    font-weight: 600;
+  }
+  .hierarchy-badge {
+    margin-left: 6px;
+    color: #ffffff;
+    border-radius: 10px;
+    font-size: 9px;
+    padding: 1px 6px;
+    line-height: 1;
+  }
+  .correct-pos {
+    color: #14AE5C;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: auto;
+  }
+  .stat-card .stat-num {
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .stat-card .stat-label {
+    font-size: 10px;
+    color: var(--figma-color-text-secondary, #999);
+    margin-top: 2px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--figma-color-text-secondary, #999);
+  }
+  .empty-state .icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+
+  .error-msg {
+    padding: 10px 12px;
+    background: #FEF0EE;
+    color: #F24822;
+    border-radius: 6px;
+    font-size: 11px;
+    margin-bottom: 12px;
+  }
+
+  .override-tag {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #FFA629;
+    color: #fff;
+    font-weight: 600;
+  }
+  .prop-tag {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #9747FF;
+    color: #fff;
+    font-weight: 600;
+  }
+  .var-tag {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #0D99FF;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .collection-group {
+    margin-bottom: 8px;
+  }
+  .collection-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    cursor: pointer;
+  }
+  .group-status {
+    font-size: 12px;
+    color: #14AE5C;
+    padding: 0 0 6px 18px;
+  }
+  .collection-chevron {
+    font-size: 10px;
+    color: var(--figma-color-text-secondary, #999);
+    transition: transform 0.15s;
+    width: 12px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .collection-header.collapsed .collection-chevron {
+    transform: rotate(-90deg);
+  }
+  .collection-body.collapsed {
+    display: none;
+  }
+  .collection-name {
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--figma-color-text-secondary, #999);
+    padding: 4px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" data-tab="properties">Properties</div>
+  <div class="tab" data-tab="names">Names</div>
+  <div class="tab" data-tab="hierarchy">Hierarchy</div>
+  <div class="tab" data-tab="hidden">Hidden</div>
+  <div class="tab" data-tab="variables">Variables</div>
+</div>
+
+<!-- Progress -->
+<div class="progress-bar" id="progressBar">
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-label" id="progressLabel"></div>
+</div>
+
+<!-- Tab: Properties -->
+<div class="tab-content active" id="tab-properties">
+  <div class="controls">
+    <select id="propScope">
+      <option value="page">Current Page</option>
+      <option value="selection">Selection</option>
+    </select>
+    <button class="btn" id="btnScanProps">Scan Properties</button>
+  </div>
+  <div id="propResults">
+    <div class="empty-state">
+      <div class="icon">&#x1F50D;</div>
+      <div>Scan your page or selection to check<br>component property health.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Names -->
+<div class="tab-content" id="tab-names">
+  <div class="controls">
+    <select id="nameScope">
+      <option value="page">Current Page</option>
+      <option value="file">Entire File</option>
+    </select>
+    <button class="btn" id="btnScanNames">Scan Names</button>
+  </div>
+  <div class="diag-banner" id="diagBanner">Diagnostics: UI … / code …</div>
+  <div id="nameResults">
+    <div class="empty-state">
+      <div class="icon">&#x1F3F7;</div>
+      <div>Scan for default, generic, or<br>unnamed layers that need attention.</div>
+    </div>
+  </div>
+</div>
+
+<div class="fix-all-bar vars">
+  <button class="btn" id="btnFixAllVars">Fix All</button>
+</div>
+
+<div class="fix-all-bar props">
+  <button class="btn" id="btnFixAllProps">Fix All</button>
+</div>
+
+<div class="fix-all-bar names">
+  <button class="btn" id="btnFixAll">Fix All</button>
+</div>
+
+<!-- Tab: Hierarchy -->
+<div class="tab-content" id="tab-hierarchy">
+  <div class="controls">
+    <button class="btn" id="btnScanHierarchy">Inspect Selection</button>
+  </div>
+  <div id="hierarchyResults">
+    <div class="empty-state">
+      <div class="icon">&#x1F333;</div>
+      <div>Select a component or instance, then click<br>"Inspect Selection" to see the property tree.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Hidden -->
+<div class="tab-content" id="tab-hidden">
+  <div class="controls">
+    <select id="hiddenScope">
+      <option value="page">Current Page</option>
+      <option value="file">Entire File</option>
+    </select>
+    <button class="btn" id="btnScanHidden">Scan Hidden Layers</button>
+  </div>
+  <div id="hiddenResults">
+    <div class="empty-state">
+      <div class="icon">&#x1F441;</div>
+      <div>Scan for hidden layers to find artifacts,<br>suspicious layers, and expected toggles.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Variables -->
+<div class="tab-content" id="tab-variables">
+  <div class="controls">
+    <select id="varScope">
+      <option value="page">Current Page</option>
+      <option value="selection">Selection</option>
+    </select>
+    <button class="btn" id="btnScanVars">Audit Variables</button>
+  </div>
+  <div id="varResults">
+    <div class="empty-state">
+      <div class="icon">&#x1F3AF;</div>
+      <div>Audit local variables for unused tokens,<br>naming issues, and missing descriptions.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- Helpers ----
+  function postToPlugin(msg) {
+    parent.postMessage({ pluginMessage: msg }, '*');
+  }
+
+  const UI_VERSION = '2026-02-08-01';
+
+  function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // ---- Tab Switching ----
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---- Diagnostics ----
+  const diagBanner = document.getElementById('diagBanner');
+  if (diagBanner) {
+    diagBanner.textContent = `Diagnostics: UI ${UI_VERSION} / code …`;
+    postToPlugin({ type: 'ui-version', version: UI_VERSION });
+  }
+
+  // ---- Progress ----
+  function showProgress(percent, label) {
+    const bar = document.getElementById('progressBar');
+    const fill = document.getElementById('progressFill');
+    const lbl = document.getElementById('progressLabel');
+    bar.classList.add('visible');
+    fill.style.width = percent + '%';
+    lbl.textContent = label || '';
+    if (percent >= 100) {
+      setTimeout(() => bar.classList.remove('visible'), 800);
+    }
+  }
+
+  // ---- Disable/Enable Buttons During Scan ----
+  function setScanning(on) {
+    document.querySelectorAll('.btn').forEach(b => b.disabled = on);
+  }
+
+  // ---- Scan Buttons ----
+  document.getElementById('btnScanProps').addEventListener('click', () => {
+    setScanning(true);
+    postToPlugin({ type: 'scan-properties', scope: document.getElementById('propScope').value });
+  });
+  document.getElementById('btnScanNames').addEventListener('click', () => {
+    setScanning(true);
+    postToPlugin({ type: 'scan-names', scope: document.getElementById('nameScope').value });
+  });
+  document.getElementById('btnScanHierarchy').addEventListener('click', () => {
+    setScanning(true);
+    postToPlugin({ type: 'scan-hierarchy' });
+  });
+  document.getElementById('btnScanHidden').addEventListener('click', () => {
+    setScanning(true);
+    postToPlugin({ type: 'scan-hidden', scope: document.getElementById('hiddenScope').value });
+  });
+  document.getElementById('btnScanVars').addEventListener('click', () => {
+    setScanning(true);
+    postToPlugin({ type: 'scan-variables', scope: document.getElementById('varScope').value });
+  });
+
+  // ---- Section Toggle ----
+  function toggleSection(header) {
+    header.classList.toggle('collapsed');
+    const body = header.nextElementSibling;
+    if (body) body.classList.toggle('collapsed');
+  }
+
+  // ---- Render: Hidden Results ----
+  function renderHiddenResults(data) {
+    const el = document.getElementById('hiddenResults');
+    const { expected, suspicious, artifact } = data.categories;
+
+    let html = `<div id="hiddenSuccessMsg" style="display:none;margin-bottom:6px;color:#14AE5C;font-size:11px;font-weight:600"></div>
+    <div class="summary-bar">
+      <span class="badge badge-success" data-cat="expected">${expected.length} Expected</span>
+      <span class="badge badge-warning" data-cat="suspicious">${suspicious.length} Suspicious</span>
+      <span class="badge badge-error" data-cat="artifact">${artifact.length} Artifacts</span>
+      <span class="badge badge-muted">${data.visited?.toLocaleString() || '?'} nodes visited</span>
+    </div>`;
+
+    html += renderHiddenSection('Suspicious', suspicious, 'badge-warning');
+    html += renderHiddenSection('Artifacts', artifact, 'badge-error');
+    html += renderHiddenSection('Expected (Component Slots)', expected, 'badge-success', true);
+
+    el.innerHTML = html;
+    el.querySelectorAll('.section-header').forEach(h => h.addEventListener('click', () => toggleSection(h)));
+    el.querySelectorAll('.select-checkbox input[data-id]').forEach(input => input.addEventListener('change', () => {
+      if (input.dataset.internal === '1') {
+        input.dataset.internal = '';
+        return;
+      }
+      if (input.checked) {
+        postToPlugin({ type: 'select-node', nodeId: input.dataset.id });
+      } else {
+        postToPlugin({ type: 'deselect-node', nodeId: input.dataset.id });
+        const section = input.closest('.section');
+        const selectAll = section ? section.querySelector('.select-all-checkbox') : null;
+        const label = section ? section.querySelector('.select-all-label') : null;
+        if (selectAll) {
+          selectAll.dataset.internal = '1';
+          selectAll.checked = false;
+          if (label) label.textContent = 'Select all';
+        }
+      }
+      updateFixAllState();
+    }));
+    el.querySelectorAll('.select-all-checkbox').forEach(input => input.addEventListener('change', () => {
+      if (input.dataset.internal === '1') {
+        input.dataset.internal = '';
+        return;
+      }
+      const section = input.closest('.section');
+      if (!section) return;
+      const label = section.querySelector('.select-all-label');
+      if (label) label.textContent = input.checked ? 'Deselect all' : 'Select all';
+      const checkboxes = section.querySelectorAll('.name-item .select-checkbox input[data-id]');
+      const ids = [];
+      checkboxes.forEach(cb => {
+        cb.dataset.internal = '1';
+        cb.checked = input.checked;
+        if (cb.dataset.id) ids.push(cb.dataset.id);
+      });
+      if (input.checked && ids.length > 0) {
+        postToPlugin({ type: 'select-nodes', nodeIds: ids });
+      } else if (!input.checked && ids.length > 0) {
+        postToPlugin({ type: 'deselect-nodes', nodeIds: ids });
+      }
+    }));
+    el.querySelectorAll('.delete-hidden-btn').forEach(b => b.addEventListener('click', () => {
+      const item = b.closest('.item');
+      if (!item) return;
+      postToPlugin({ type: 'delete-node', nodeId: b.dataset.id });
+      b.disabled = true;
+      b.textContent = '...';
+      const status = el.querySelector(`.rename-status[data-id="${b.dataset.id}"]`);
+      if (status) status.textContent = 'Deleting...';
+    }));
+  }
+
+  function updateHiddenCountsAfterDelete(itemEl) {
+    if (!itemEl) return;
+    const hiddenRoot = document.getElementById('hiddenResults');
+    if (hiddenRoot) {
+      hiddenRoot.querySelectorAll('.section').forEach(sec => {
+        const remaining = sec.querySelectorAll('.name-item').length;
+        const badge = sec.querySelector('.section-header .badge');
+        if (badge) {
+          badge.textContent = String(Math.max(0, remaining));
+          badge.classList.remove('badge-error', 'badge-warning', 'badge-info', 'badge-success');
+          badge.classList.add(remaining === 0 ? 'badge-success' : (badge.dataset.original || 'badge-error'));
+        }
+        const status = sec.querySelector('.section-status');
+        const selectAllWrap = sec.querySelector('.select-all-wrapper');
+        if (remaining === 0) {
+          if (status) status.textContent = 'All the instances clean now';
+          if (selectAllWrap) selectAllWrap.style.display = 'none';
+        }
+      });
+    }
+    const hiddenResults = document.getElementById('hiddenResults');
+    if (!hiddenResults) return;
+    const counts = { expected: 0, suspicious: 0, artifact: 0 };
+    hiddenResults.querySelectorAll('.section').forEach(sec => {
+      const cat = sec.dataset.cat;
+      const badge = sec.querySelector('.section-header .badge');
+      if (!cat || !badge) return;
+      const val = parseInt(badge.textContent || '0', 10);
+      if (counts[cat] !== undefined) counts[cat] += val;
+    });
+    hiddenResults.querySelectorAll('.summary-bar .badge[data-cat]').forEach(b => {
+      const cat = b.dataset.cat;
+      if (!cat || counts[cat] === undefined) return;
+      const label = b.textContent.replace(/^\d+\s*/, '');
+      b.textContent = `${counts[cat]} ${label}`;
+    });
+  }
+
+  function showHiddenSuccess(message) {
+    const msg = document.getElementById('hiddenSuccessMsg');
+    if (!msg) return;
+    msg.textContent = message;
+    msg.style.display = 'block';
+    const hiddenResults = document.getElementById('hiddenResults');
+    if (hiddenResults) {
+      hiddenResults.querySelectorAll('.section').forEach(sec => {
+        const status = sec.querySelector('.section-status');
+        const selectAllWrap = sec.querySelector('.select-all-wrapper');
+        if (status) status.textContent = message;
+        if (selectAllWrap) selectAllWrap.style.display = 'none';
+      });
+    }
+    window.setTimeout(() => {
+      msg.style.display = 'none';
+      msg.textContent = '';
+      if (hiddenResults) {
+        hiddenResults.querySelectorAll('.section').forEach(sec => {
+          const remaining = sec.querySelectorAll('.name-item').length;
+          const status = sec.querySelector('.section-status');
+          const selectAllWrap = sec.querySelector('.select-all-wrapper');
+          if (remaining === 0) {
+            if (status) status.textContent = 'All the instances clean now';
+            if (selectAllWrap) selectAllWrap.style.display = 'none';
+          } else {
+            if (status) status.textContent = '';
+            if (selectAllWrap) selectAllWrap.style.display = 'flex';
+          }
+        });
+      }
+    }, 2000);
+  }
+
+  function renderHiddenSection(title, items, badgeClass, startCollapsed) {
+    if (items.length === 0) return '';
+    const col = startCollapsed ? ' collapsed' : '';
+    const cat = title.toLowerCase().includes('expected') ? 'expected'
+      : (title.toLowerCase().includes('artifact') ? 'artifact' : 'suspicious');
+    let html = `<div class="section" data-cat="${cat}">
+      <div class="section-header${col}" onclick="toggleSection(this)">
+        <span class="chevron">&#9660;</span>
+        ${title}
+        <span class="badge ${badgeClass}" data-original="${badgeClass}">${items.length}</span>
+      </div>
+      <div class="section-body${col}">
+        <div class="section-actions">
+          <div class="select-all-wrapper">
+            <label class="select-checkbox compact">
+              <input type="checkbox" class="select-all-checkbox" />
+              <span class="checkbox-box"></span>
+            </label>
+            <span class="select-all-label">Select all</span>
+          </div>
+          <span class="section-status"></span>
+        </div>`;
+    for (const item of items.slice(0, 200)) {
+      html += `<div class="item name-item" data-id="${esc(item.id)}">
+        <div class="name-row">
+          <span class="type-badge">${esc(item.type.substring(0, 3))}</span>
+          <div class="name-details">
+            <div class="reason">Error: ${esc(item.reason || 'Name does not match other used names')}</div>
+            <div class="path">Path: ${esc(item.page)}${item.path ? ' > ' + esc(item.path) : ''}</div>
+          </div>
+        </div>
+        <div class="rename-controls">
+          <label class="select-checkbox">
+            <input type="checkbox" data-id="${esc(item.id)}" />
+            <span class="checkbox-box"></span>
+          </label>
+          <button class="btn btn-secondary btn-small delete-hidden-btn" data-id="${esc(item.id)}">Delete</button>
+          <span class="rename-status" data-id="${esc(item.id)}"></span>
+        </div>
+      </div>`;
+    }
+    if (items.length > 200) {
+      html += `<div style="padding:8px;color:var(--figma-color-text-secondary);font-size:10px;text-align:center">
+        ...and ${items.length - 200} more
+      </div>`;
+    }
+    html += `</div></div>`;
+    return html;
+  }
+
+  // ---- Render: Property Results ----
+  function renderPropertyResults(data) {
+    const el = document.getElementById('propResults');
+    const { badPropNames, badPropValues, propStats } = data;
+    const total = propStats ? propStats.totalComponents : 0;
+    const issues = (badPropNames ? badPropNames.length : 0) + (badPropValues ? badPropValues.length : 0);
+    const clean = Math.max(total - issues, 0);
+    const cleanRate = total > 0 ? Math.round((clean / total) * 100) : 100;
+    el.dataset.total = String(total);
+
+    let html = `<div class="summary-bar">
+      <div class="stat-card">
+        <div class="stat-num">${total.toLocaleString()}</div>
+        <div class="stat-label">Components</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:${cleanRate >= 80 ? '#14AE5C' : '#FFA629'}">${cleanRate}%</div>
+        <div class="stat-label">Clean</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:${issues === 0 ? '#14AE5C' : '#F24822'}">${issues}</div>
+        <div class="stat-label">Issues</div>
+      </div>
+    </div>`;
+
+    html += renderPropSection(
+      'Property Names',
+      badPropNames || [],
+      'badge-warning',
+      'Property names must be camelCase and use "state" instead of "status"',
+      'name'
+    );
+    html += renderPropSection(
+      'Instance & Value Names',
+      badPropValues || [],
+      'badge-warning',
+      'Property values must be camelCase and use "state" instead of "status"',
+      'value'
+    );
+
+    if ((!badPropNames || badPropNames.length === 0) && (!badPropValues || badPropValues.length === 0)) {
+      html += `<div style="text-align:center;padding:20px;color:#14AE5C;font-weight:600">
+        All clear! No property issues found.
+      </div>`;
+    }
+
+    el.innerHTML = html;
+    el.querySelectorAll('.section-header').forEach(h => h.addEventListener('click', () => toggleSection(h)));
+    bindPropertyHandlers();
+  }
+
+  function renderPropSection(title, items, badgeClass, description, kind) {
+    if (items.length === 0) return '';
+    const sectionId = (title + '-' + kind).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    let html = `<div class="section">
+      <div class="section-header">
+        <span class="chevron">&#9660;</span>
+        ${title}
+        <span class="badge ${badgeClass}" data-original="${badgeClass}">${items.length}</span>
+      </div>
+      <div class="section-body">
+      <div style="font-size:10px;color:var(--figma-color-text-secondary);margin-bottom:6px">${description}</div>
+      <div class="section-actions">
+        <div class="select-all-wrapper">
+          <label class="select-checkbox compact">
+            <input type="checkbox" class="select-all-checkbox" data-section="${esc(sectionId)}" />
+            <span class="checkbox-box"></span>
+          </label>
+          <span class="select-all-label">Select all</span>
+        </div>
+        <span class="section-status" data-section="${esc(sectionId)}"></span>
+      </div>`;
+    for (const item of items.slice(0, 200)) {
+      const reason = item.reason || 'Name should be camelCase';
+      const suggested = item.suggested || '';
+      const valueLine = item.valueName ? `<div class="path">Value: ${esc(item.valueName)}</div>` : '';
+      const variantLine = item.variantName ? `<div class="path">Variant: ${esc(item.variantName)}</div>` : '';
+      html += `<div class="item name-item prop-item" data-id="${esc(item.id)}" data-kind="${esc(kind)}" data-prop="${esc(item.propName)}" data-value="${esc(item.valueName || '')}">
+        <div class="name-row">
+          <span class="type-badge">${item.type === 'COMPONENT_SET' ? 'SET' : 'COM'}</span>
+          <div class="name-details">
+            <div class="reason">Error: ${esc(reason)}</div>
+            <div class="path">Component: ${esc(item.name)}</div>
+            ${variantLine}
+            <div class="path">Property: ${esc(item.propName)}</div>
+            ${valueLine}
+          </div>
+        </div>
+        <div class="rename-controls">
+          <label class="select-checkbox">
+            <input type="checkbox" data-id="${esc(item.id)}" />
+            <span class="checkbox-box"></span>
+          </label>
+          <input class="rename-input" value="${esc(suggested)}" />
+          <button class="btn btn-secondary btn-small apply-rename-btn" data-id="${esc(item.id)}">Apply</button>
+          <span class="rename-status" data-id="${esc(item.id)}"></span>
+        </div>
+      </div>`;
+    }
+    if (items.length > 200) {
+      html += `<div style="padding:8px;color:var(--figma-color-text-secondary);font-size:10px;text-align:center">
+        ...and ${items.length - 200} more
+      </div>`;
+    }
+    html += `</div></div>`;
+    return html;
+  }
+
+  // ---- Render: Variable Results ----
+  function renderVariableResults(data) {
+    const el = document.getElementById('varResults');
+    const { stats, unused, naming, missed } = data;
+
+    let html = `<div class="summary-bar">
+      <div class="stat-card">
+        <div class="stat-num">${stats.total}</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:#14AE5C">${stats.used}</div>
+        <div class="stat-label">Used</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:#F24822">${stats.unused}</div>
+        <div class="stat-label">Unused</div>
+      </div>
+    </div>`;
+
+    // Missed Variables
+    if (missed && missed.length > 0) {
+      const groups = {
+        padding: { title: 'Padding', items: [] },
+        gap: { title: 'Gap', items: [] },
+        borderRadius: { title: 'Border Radius', items: [] },
+        borderWidth: { title: 'Border Width', items: [] },
+        spacing: { title: 'Spacing', items: [] },
+        colors: { title: 'Colors', items: [] },
+      };
+      const groupFor = (prop) => {
+        const p = String(prop || '').toLowerCase();
+        if (p.includes('padding')) return 'padding';
+        if (p.includes('gap') || p.includes('spacing')) return 'gap';
+        if (p.includes('radius')) return 'borderRadius';
+        if (p.includes('border') || p.includes('stroke')) return 'borderWidth';
+        if (p.includes('space')) return 'spacing';
+        return 'colors';
+      };
+      for (const item of missed) {
+        const key = groupFor(item.property);
+        groups[key].items.push(item);
+      }
+      html += `<div class="section">
+        <div class="section-body">`;
+      for (const group of Object.values(groups)) {
+        if (group.items.length === 0) {
+          html += `<div class="collection-group" data-group="${esc(group.title)}">
+          <div class="section-header collapsed">
+              <span class="chevron">&#9660;</span>
+              <div class="collection-name">${group.title} (0)</div>
+            </div>
+            <div class="group-status">All the instances clean now</div>
+          </div>`;
+          continue;
+        }
+        html += `<div class="collection-group" data-group="${esc(group.title)}">
+          <div class="section-header">
+            <span class="chevron">&#9660;</span>
+            <div class="collection-name">${group.title} (${group.items.length})</div>
+          </div>
+          <div class="group-status"></div>
+          <div class="collection-body">
+            <div class="section-actions">
+              <div class="select-all-wrapper">
+                <label class="select-checkbox compact missed-select-all" data-group="${esc(group.title)}">
+                  <input type="checkbox" />
+                  <span class="checkbox-box"></span>
+                </label>
+                <span class="select-all-label">Select all</span>
+              </div>
+              <span class="section-status" data-group="${esc(group.title)}"></span>
+            </div>`;
+        for (const item of group.items.slice(0, 200)) {
+          const suggestedName = (item.suggestedName && item.suggestedName.length > 0)
+            ? item.suggestedName
+            : (Number(item.value) === 0 ? 'none' : '');
+          html += `<div class="item name-item missed-item" data-id="${esc(item.id)}" data-key="${esc(item.propertyKey || '')}">
+            <div class="name-row">
+              <span class="type-badge">${esc(item.type.substring(0, 3))}</span>
+              <div class="name-details">
+                <div class="reason">Missing variable</div>
+                <div class="path">${esc(item.page)}${item.path ? ' > ' + esc(item.path) : ''}</div>
+                <div class="path">Property: ${esc(item.property)} · Value: ${esc(String(item.value))}</div>
+              </div>
+            </div>
+            <div class="rename-controls">
+              <label class="select-checkbox">
+                <input type="checkbox" data-id="${esc(item.id)}" />
+                <span class="checkbox-box"></span>
+              </label>
+              <div class="var-input">
+                <img class="var-icon" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' width='64' height='64'><polygon points='32,4 56,18 56,46 32,60 8,46 8,18' fill='none' stroke='%230D99FF' stroke-width='6'/><circle cx='32' cy='32' r='10' fill='%230D99FF'/></svg>" alt="Var" />
+                <input class="rename-input" value="${esc(suggestedName)}" data-var-id="${esc(item.suggestedId || '')}" data-var-name="${esc(suggestedName)}" />
+              </div>
+              <button class="btn btn-secondary btn-small apply-var-btn" data-id="${esc(item.id)}">Apply</button>
+              <span class="rename-status" data-id="${esc(item.id)}"></span>
+            </div>
+          </div>`;
+        }
+        if (group.items.length > 200) {
+          html += `<div style="padding:8px;color:var(--figma-color-text-secondary);font-size:10px;text-align:center">
+            ...and ${group.items.length - 200} more
+          </div>`;
+        }
+        html += `</div></div>`;
+      }
+      html += `</div></div>`;
+    }
+
+    // Unused Variables
+    if (unused.length > 0) {
+      // Group by collection
+      const groups = {};
+      for (const v of unused) {
+        if (!groups[v.collection]) groups[v.collection] = [];
+        groups[v.collection].push(v);
+      }
+
+      html += `<div class="section">
+        <div class="section-header">
+          <span class="chevron">&#9660;</span>
+          Unused Variables
+          <span class="badge badge-error">${unused.length}</span>
+        </div>
+        <div class="section-body">`;
+      for (const [col, vars] of Object.entries(groups)) {
+        html += `<div class="collection-group">
+          <div class="collection-name">${esc(col)} (${vars.length})</div>`;
+        for (const v of vars.slice(0, 50)) {
+          html += `<div class="item">
+            <span class="type-badge">${esc(v.resolvedType.substring(0, 3))}</span>
+            <span class="name">${esc(v.name)}</span>
+            <button class="btn-danger remove-var-btn" data-id="${esc(v.id)}">Remove</button>
+          </div>`;
+        }
+        if (vars.length > 50) {
+          html += `<div style="padding:8px;color:var(--figma-color-text-secondary);font-size:10px;text-align:center">
+            ...and ${vars.length - 50} more
+          </div>`;
+        }
+        html += `</div>`;
+      }
+      html += `</div></div>`;
+    }
+
+    // Naming Issues
+    const namingTotal = naming.orphans.length + naming.missingDesc.length + naming.misplaced.length;
+    if (namingTotal > 0) {
+      html += `<div class="section">
+        <div class="section-header">
+          <span class="chevron">&#9660;</span>
+          Naming Issues
+          <span class="badge badge-warning">${namingTotal}</span>
+        </div>
+        <div class="section-body">`;
+
+      if (naming.orphans.length > 0) {
+        html += `<div class="collection-group">
+          <div class="collection-name">Root-Level Orphans (no group path)</div>`;
+        for (const v of naming.orphans) {
+          html += `<div class="item">
+            <span class="type-badge">ORP</span>
+            <span class="name">${esc(v.name)}</span>
+            <span class="path">${esc(v.collection)}</span>
+          </div>`;
+        }
+        html += `</div>`;
+      }
+
+      if (naming.misplaced.length > 0) {
+        html += `<div class="collection-group">
+          <div class="collection-name">Component Tokens under Global/</div>`;
+        for (const v of naming.misplaced) {
+          html += `<div class="item">
+            <span class="type-badge">MIS</span>
+            <span class="name">${esc(v.name)}</span>
+            <span class="path">${esc(v.collection)}</span>
+          </div>`;
+        }
+        html += `</div>`;
+      }
+
+      if (naming.missingDesc.length > 0) {
+        html += `<div class="collection-group">
+          <div class="collection-name collapsed" onclick="toggleSection(this)" style="cursor:pointer">
+            <span class="chevron" style="font-size:10px">&#9660;</span>
+            Missing Descriptions (${naming.missingDesc.length})
+          </div>
+          <div class="section-body collapsed">`;
+        for (const v of naming.missingDesc.slice(0, 50)) {
+          html += `<div class="item">
+            <span class="type-badge">DSC</span>
+            <span class="name">${esc(v.name)}</span>
+            <span class="path">${esc(v.collection)}</span>
+          </div>`;
+        }
+        if (naming.missingDesc.length > 50) {
+          html += `<div style="padding:8px;color:var(--figma-color-text-secondary);font-size:10px;text-align:center">
+            ...and ${naming.missingDesc.length - 50} more
+          </div>`;
+        }
+        html += `</div></div>`;
+      }
+
+      html += `</div></div>`;
+    }
+
+    if ((missed ? missed.length === 0 : true) && unused.length === 0 && namingTotal === 0) {
+      html += `<div style="text-align:center;padding:20px;color:#14AE5C;font-weight:600">
+        All variables are used and properly named!
+      </div>`;
+    }
+
+    if (missed && missed.length === 0) {
+      html += `<div style="text-align:left;padding:8px 0;color:#14AE5C;font-weight:600">
+        All the instances clean now
+      </div>`;
+    }
+
+    el.innerHTML = html;
+    el.querySelectorAll('.section-header').forEach(h => h.addEventListener('click', () => toggleSection(h)));
+    const updateFixAllVarsState = () => {
+      const fixAllBar = document.querySelector('.fix-all-bar.vars');
+      const fixAllBtn = document.getElementById('btnFixAllVars');
+      const checked = el.querySelectorAll('.missed-item .select-checkbox input[data-id]:checked');
+      const hasChecked = checked.length > 0;
+      if (fixAllBar) fixAllBar.style.display = hasChecked ? 'block' : 'none';
+      if (fixAllBtn) {
+        fixAllBtn.disabled = !hasChecked;
+        if (hasChecked && fixAllBtn.dataset.state !== 'updated') fixAllBtn.textContent = 'Fix All';
+        if (!hasChecked) {
+          fixAllBtn.textContent = 'Fix All';
+          fixAllBtn.dataset.state = '';
+        }
+      }
+    };
+    window.updateFixAllVarsState = updateFixAllVarsState;
+
+    const updateGroupStatus = () => {
+      el.querySelectorAll('.collection-group').forEach(group => {
+        const count = group.querySelectorAll('.missed-item').length;
+        const selectAllWrap = group.querySelector('.select-all-wrapper');
+        const status = group.querySelector('.section-status');
+        const groupStatus = group.querySelector('.group-status');
+        const nameEl = group.querySelector('.collection-name');
+        const title = group.dataset.group || '';
+        if (nameEl) {
+          nameEl.textContent = `${title} (${count})`;
+        }
+        const body = group.querySelector('.collection-body');
+        const header = group.querySelector('.collection-header');
+        if (count === 0) {
+          if (selectAllWrap) selectAllWrap.style.display = 'none';
+          if (status) status.textContent = 'All the instances clean now';
+          if (groupStatus) groupStatus.textContent = '';
+          if (body) body.classList.add('collapsed');
+          if (header) header.classList.add('collapsed');
+          group.dataset.locked = '1';
+        } else {
+          if (selectAllWrap) selectAllWrap.style.display = 'flex';
+          if (status) status.textContent = '';
+          if (groupStatus) groupStatus.textContent = '';
+          group.dataset.locked = '';
+        }
+      });
+    };
+    window.updateGroupStatus = updateGroupStatus;
+
+    el.querySelectorAll('.section-header').forEach(h => h.addEventListener('click', (e) => {
+      if (e.target.closest('.missed-select-all')) return;
+      const group = h.closest('.collection-group');
+      if (!group || group.dataset.locked === '1') return;
+      const body = group.querySelector('.collection-body');
+      const chev = h.querySelector('.chevron');
+      if (body) body.classList.toggle('collapsed');
+      h.classList.toggle('collapsed');
+      if (chev) chev.textContent = body && body.classList.contains('collapsed') ? '▶' : '▼';
+    }));
+
+    const handleMissedSelectAll = (input) => {
+      const group = input.closest('.collection-group');
+      if (!group) return;
+      const items = group.querySelectorAll('.missed-item .select-checkbox input[data-id]');
+      items.forEach(cb => { cb.checked = input.checked; });
+      updateFixAllVarsState();
+    };
+    el.querySelectorAll('.missed-select-all input').forEach(input => {
+      input.addEventListener('change', () => handleMissedSelectAll(input));
+      input.addEventListener('click', () => handleMissedSelectAll(input));
+    });
+
+    el.querySelectorAll('.missed-item .select-checkbox input[data-id]').forEach(input => input.addEventListener('change', () => {
+      if (input.checked) {
+        postToPlugin({ type: 'select-node', nodeId: input.dataset.id });
+      } else {
+        postToPlugin({ type: 'deselect-node', nodeId: input.dataset.id });
+      }
+      updateFixAllVarsState();
+    }));
+    el.querySelectorAll('.apply-var-btn').forEach(b => b.addEventListener('click', () => {
+      const item = b.closest('.missed-item');
+      if (!item) return;
+      const input = item.querySelector('.rename-input');
+      if (!input) return;
+      const variableName = input.value.trim();
+      if (!variableName || variableName === '0') return;
+      const suggestedId = input.dataset.varId || '';
+      const suggestedName = input.dataset.varName || '';
+      const variableId = variableName === suggestedName ? suggestedId : '';
+      postToPlugin({
+        type: 'bind-variable',
+        nodeId: b.dataset.id,
+        propertyKey: item.dataset.key,
+        variableId,
+        variableName,
+      });
+      b.disabled = true;
+      b.textContent = '...';
+      const status = item.querySelector(`.rename-status[data-id="${b.dataset.id}"]`);
+      if (status) status.textContent = 'Applying...';
+    }));
+
+    updateFixAllVarsState();
+    updateGroupStatus();
+    el.querySelectorAll('.remove-var-btn').forEach(b => b.addEventListener('click', () => {
+      if (confirm('Remove variable "' + b.parentElement.querySelector('.name').textContent + '"?')) {
+        postToPlugin({ type: 'remove-variable', variableId: b.dataset.id });
+        b.disabled = true;
+        b.textContent = '...';
+      }
+    }));
+  }
+
+  // ---- Render: Name Results ----
+  function renderNameResults(data) {
+    const el = document.getElementById('nameResults');
+    const { stats, defaultNames, shortNames, autolayoutNames } = data;
+    const cleanRate = stats.total > 0 ? Math.round((stats.clean / stats.total) * 100) : 100;
+    el.dataset.total = String(stats.total || 0);
+
+    let html = `<div class="summary-bar">
+      <div class="stat-card">
+        <div class="stat-num">${stats.total.toLocaleString()}</div>
+        <div class="stat-label">Layers</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:${cleanRate >= 80 ? '#14AE5C' : '#FFA629'}">${cleanRate}%</div>
+        <div class="stat-label">Clean</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:#F24822">${stats.issues}</div>
+        <div class="stat-label">Issues</div>
+      </div>
+    </div>`;
+
+    html += renderNameSection('Default / Generic Names', defaultNames, 'badge-error',
+      'Layers still using Figma defaults like "Frame 1" or "Rectangle 47"');
+    html += renderNameSection('Unnamed Auto-Layout Frames', autolayoutNames, 'badge-warning',
+      'Auto-layout frames with default names — these are structural and deserve a name');
+    html += renderNameSection('Very Short Names', shortNames, 'badge-info',
+      'Layers with 1-2 character names that may lack context');
+
+    if (stats.issues === 0) {
+      html += `<div style="text-align:center;padding:20px;color:#14AE5C;font-weight:600">
+        All layers are properly named!
+      </div>`;
+    }
+
+    el.innerHTML = html;
+    el.querySelectorAll('.section-header').forEach(h => h.addEventListener('click', () => toggleSection(h)));
+    const updateFixAllState = () => {
+      const container = document.getElementById('nameResults');
+      if (!container || !fixAllBtn) return;
+      const checked = container.querySelectorAll('.name-item .select-checkbox input[data-id]:checked');
+      const hasChecked = checked.length > 0;
+      fixAllBtn.disabled = !hasChecked;
+      const fixAllBar = document.querySelector('.fix-all-bar.names');
+      if (fixAllBar) {
+        fixAllBar.style.display = hasChecked ? 'block' : 'none';
+      }
+      if (hasChecked && fixAllBtn.dataset.state !== 'updated') {
+        fixAllBtn.textContent = 'Fix All';
+      }
+      if (!hasChecked) {
+        fixAllBtn.textContent = 'Fix All';
+        fixAllBtn.dataset.state = '';
+      }
+    };
+
+    el.querySelectorAll('.select-checkbox input[data-id]').forEach(input => input.addEventListener('change', () => {
+      if (input.dataset.internal === '1') {
+        input.dataset.internal = '';
+        return;
+      }
+      if (input.checked) {
+        postToPlugin({ type: 'select-node', nodeId: input.dataset.id });
+      } else {
+        postToPlugin({ type: 'deselect-node', nodeId: input.dataset.id });
+        const section = input.closest('.section');
+        const selectAll = section ? section.querySelector('.select-all-checkbox') : null;
+        const label = section ? section.querySelector('.select-all-label') : null;
+        if (selectAll) {
+          selectAll.dataset.internal = '1';
+          selectAll.checked = false;
+          if (label) label.textContent = 'Select all';
+        }
+      }
+      updateFixAllState();
+    }));
+    el.querySelectorAll('.select-all-checkbox').forEach(input => input.addEventListener('change', () => {
+      const section = input.closest('.section');
+      if (!section) return;
+      const label = section.querySelector('.select-all-label');
+      const checkboxes = section.querySelectorAll('.name-item .select-checkbox input[data-id]');
+      const ids = [];
+      checkboxes.forEach(cb => {
+        cb.dataset.internal = '1';
+        cb.checked = input.checked;
+        if (input.checked && cb.dataset.id) ids.push(cb.dataset.id);
+      });
+      if (label) label.textContent = input.checked ? 'Deselect all' : 'Select all';
+      if (input.checked && ids.length > 0) {
+        postToPlugin({ type: 'select-nodes', nodeIds: ids });
+      }
+      if (!input.checked) {
+        if (ids.length > 0) {
+          postToPlugin({ type: 'deselect-nodes', nodeIds: ids });
+        }
+        postToPlugin({ type: 'clear-selection' });
+      }
+      updateFixAllState();
+    }));
+    el.querySelectorAll('.apply-rename-btn').forEach(b => b.addEventListener('click', () => {
+      const item = b.closest('.item');
+      if (!item) return;
+      const input = item.querySelector('.rename-input');
+      if (!input) return;
+      const newName = input.value.trim();
+      if (newName.length === 0) return;
+      postToPlugin({ type: 'rename-node', nodeId: b.dataset.id, newName });
+      b.disabled = true;
+      b.textContent = '...';
+      const status = el.querySelector(`.rename-status[data-id="${b.dataset.id}"]`);
+      if (status) status.textContent = 'Renaming...';
+    }));
+
+    updateFixAllState();
+    updateNameStats();
+  }
+
+  function renderNameSection(title, items, badgeClass, description) {
+    if (items.length === 0) return '';
+    const sectionId = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    let html = `<div class="section">
+      <div class="section-header">
+        <span class="chevron">&#9660;</span>
+        ${title}
+        <span class="badge ${badgeClass}" data-original="${badgeClass}">${items.length}</span>
+      </div>
+      <div class="section-body">
+      <div style="font-size:10px;color:var(--figma-color-text-secondary);margin-bottom:6px">${description}</div>
+      <div class="section-actions">
+        <div class="select-all-wrapper">
+          <label class="select-checkbox compact">
+            <input type="checkbox" class="select-all-checkbox" data-section="${esc(sectionId)}" />
+            <span class="checkbox-box"></span>
+          </label>
+          <span class="select-all-label">Select all</span>
+        </div>
+        <span class="section-status" data-section="${esc(sectionId)}"></span>
+      </div>`;
+    for (const item of items.slice(0, 200)) {
+      html += `<div class="item name-item" data-id="${esc(item.id)}">
+        <div class="name-row">
+          <span class="type-badge">${esc(item.type.substring(0, 3))}</span>
+          <div class="name-details">
+            <div class="reason">Error: ${esc(item.reason || 'Name does not match other used names')}</div>
+            <div class="path">Path: ${esc(item.page)}${item.path ? ' > ' + esc(item.path) : ''}</div>
+          </div>
+        </div>
+        <div class="rename-controls">
+          <label class="select-checkbox">
+            <input type="checkbox" data-id="${esc(item.id)}" />
+            <span class="checkbox-box"></span>
+          </label>
+          <input class="rename-input" value="${esc(item.suggested || '')}" />
+          <button class="btn btn-secondary btn-small apply-rename-btn" data-id="${esc(item.id)}">Apply</button>
+          <span class="rename-status" data-id="${esc(item.id)}"></span>
+        </div>
+      </div>`;
+    }
+    if (items.length > 200) {
+      html += `<div style="padding:8px;color:var(--figma-color-text-secondary);font-size:10px;text-align:center">
+        ...and ${items.length - 200} more
+      </div>`;
+    }
+    html += `</div></div>`;
+    return html;
+  }
+
+  // ---- Render: Hierarchy Results ----
+  function renderHierarchyResults(data) {
+    const el = document.getElementById('hierarchyResults');
+    if (!data.tree) {
+      el.innerHTML = '<div class="error-msg">Could not build hierarchy tree.</div>';
+      return;
+    }
+    el.innerHTML = '';
+    if (data.validation && data.validation.entries) {
+      const v = data.validation;
+      let html = `<div class="hierarchy-panel">`;
+      html += `<div style="font-weight:600;margin-bottom:6px">Hierarchy Validation</div>`;
+      html += `<div style="font-size:10px;color:var(--figma-color-text-secondary);margin-bottom:6px">Errors: <span id="hierarchyErrorCount">${v.totalErrors}</span></div>`;
+      html += `<div class="hierarchy-layout">
+        <div class="hierarchy-list">`;
+      for (const entry of v.entries) {
+        const wrong = entry.wrong ? ' wrong' : '';
+        const displayName = String(entry.name || '').split('#')[0].trim();
+        html += `<div class="hierarchy-row${wrong}">
+          <span>${esc(displayName)}</span>
+          ${entry.wrong ? `<span class="hierarchy-badge">(${entry.correctIndex + 1})</span>` : ''}
+        </div>`;
+      }
+      html += `</div>
+        <div class="hierarchy-guide">
+          <div class="title">Correct order</div>
+          <div class="rule">1. size</div>
+          <div class="rule">2. state</div>
+          <div class="rule">3. variant</div>
+          <div class="rule">4. boolean</div>
+          <div class="rule">5. text content</div>
+          <div class="rule">6. label content</div>
+        </div>
+      </div>`;
+      if (v.totalErrors > 0) {
+        html += `<button class="btn btn-secondary" id="btnFixHierarchy">Fix</button>`;
+      }
+      html += `<div id="hierarchyFixStatus" style="margin-top:6px;font-size:10px;color:#14AE5C"></div>`;
+      html += `</div>`;
+      el.innerHTML = html;
+      const fixBtn = document.getElementById('btnFixHierarchy');
+      if (fixBtn) {
+        fixBtn.addEventListener('click', () => {
+          postToPlugin({ type: 'fix-hierarchy', nodeId: v.nodeId, desiredOrder: v.desiredOrder });
+          fixBtn.disabled = true;
+          fixBtn.textContent = '...';
+        });
+      }
+      if (v.totalErrors === 0) {
+        const status = document.getElementById('hierarchyFixStatus');
+        if (status) status.textContent = 'Hierarchy Fixed';
+      }
+    }
+    // Hide tree rows in hierarchy tab (validation only)
+  }
+
+  function buildTreeDOM(node, depth) {
+    const row = document.createElement('div');
+    const hasChildren = node.children && node.children.length > 0;
+
+    // Row
+    const rowEl = document.createElement('div');
+    rowEl.className = 'tree-row' + (node.visible === false ? ' tree-hidden' : '');
+    rowEl.style.paddingLeft = (depth * 16) + 'px';
+
+    // Chevron
+    const chevron = document.createElement('span');
+    chevron.className = 'tree-chevron';
+    chevron.textContent = hasChildren ? '\u25BC' : '';
+    rowEl.appendChild(chevron);
+
+    // Type badge
+    const typeMap = {
+      COMPONENT_SET: 'SET', COMPONENT: 'COM', INSTANCE: 'INS',
+      FRAME: 'FRA', TEXT: 'TXT', GROUP: 'GRP',
+      VECTOR: 'VEC', RECTANGLE: 'REC', ELLIPSE: 'ELL', LINE: 'LIN',
+    };
+    const typeBadge = document.createElement('span');
+    const typeLabel = typeMap[node.type] || node.type.substring(0, 3);
+    typeBadge.className = 'tree-type tree-type-' + (
+      ['COMPONENT_SET','COMPONENT','INSTANCE','FRAME','TEXT'].includes(node.type) ? node.type : 'default'
+    );
+    typeBadge.textContent = typeLabel;
+    rowEl.appendChild(typeBadge);
+
+    // Name
+    const nameEl = document.createElement('span');
+    nameEl.className = 'tree-name';
+    nameEl.textContent = node.name;
+    nameEl.addEventListener('click', () => {
+      postToPlugin({ type: 'select-node', nodeId: node.id });
+    });
+    rowEl.appendChild(nameEl);
+
+    // Badges
+    const badges = document.createElement('span');
+    badges.className = 'tree-badges';
+    if (node.propertyDefs && node.propertyDefs.length > 0) {
+      const b = document.createElement('span');
+      b.className = 'prop-tag';
+      b.textContent = node.propertyDefs.length + 'P';
+      b.title = node.propertyDefs.map(p => p.name + ' (' + p.type + ')').join('\n');
+      badges.appendChild(b);
+    }
+    if (node.instanceOverrides && node.instanceOverrides.length > 0) {
+      const b = document.createElement('span');
+      b.className = 'override-tag';
+      b.textContent = node.instanceOverrides.length + 'O';
+      b.title = node.instanceOverrides.map(o => o.name + ': ' + o.defaultValue + ' \u2192 ' + o.value).join('\n');
+      badges.appendChild(b);
+    }
+    if (node.boundVarCount > 0) {
+      const b = document.createElement('span');
+      b.className = 'var-tag';
+      b.textContent = node.boundVarCount + 'V';
+      badges.appendChild(b);
+    }
+    rowEl.appendChild(badges);
+
+    row.appendChild(rowEl);
+
+    // Children container
+    if (hasChildren) {
+      const childContainer = document.createElement('div');
+      childContainer.className = 'tree-children';
+      for (const child of node.children) {
+        childContainer.appendChild(buildTreeDOM(child, depth + 1));
+      }
+      row.appendChild(childContainer);
+
+      chevron.addEventListener('click', () => {
+        const collapsed = childContainer.classList.toggle('collapsed');
+        chevron.textContent = collapsed ? '\u25B6' : '\u25BC';
+      });
+    }
+
+    return row;
+  }
+
+  // ---- Message Router ----
+  window.onmessage = (event) => {
+    const msg = event.data.pluginMessage;
+    if (!msg) return;
+
+    switch (msg.type) {
+      case 'progress':
+        showProgress(msg.percent, msg.label);
+        break;
+      case 'hidden-results':
+        setScanning(false);
+        renderHiddenResults(msg);
+        break;
+      case 'property-results':
+        setScanning(false);
+        renderPropertyResults(msg);
+        break;
+      case 'name-results':
+        setScanning(false);
+        renderNameResults(msg);
+        break;
+      case 'variable-results':
+        setScanning(false);
+        renderVariableResults(msg);
+        break;
+      case 'hierarchy-results':
+        setScanning(false);
+        renderHierarchyResults(msg);
+        break;
+      case 'hierarchy-fixed':
+        const hierarchyStatus = document.getElementById('hierarchyFixStatus');
+        if (hierarchyStatus) hierarchyStatus.textContent = 'Hierarchy Fixed';
+        const hierarchyCount = document.getElementById('hierarchyErrorCount');
+        if (hierarchyCount) {
+          const current = parseInt(hierarchyCount.textContent || '0', 10);
+          hierarchyCount.textContent = String(Math.max(0, current - 1));
+        }
+        const fixBtn = document.getElementById('btnFixHierarchy');
+        if (fixBtn) {
+          fixBtn.disabled = true;
+          fixBtn.textContent = 'Fixed';
+        }
+        break;
+      case 'variable-removed':
+        // Remove the item from the DOM
+        const btn = document.querySelector(`.remove-var-btn[data-id="${msg.variableId}"]`);
+        if (btn) {
+          const item = btn.closest('.item');
+          if (item) item.remove();
+        }
+        break;
+      case 'node-renamed':
+        const renamedItem = document.querySelector(`.item[data-id="${msg.nodeId}"]`);
+        if (renamedItem) renamedItem.remove();
+        updateNameStats();
+        break;
+      case 'prop-renamed':
+        const propItem = document.querySelector(
+          `.item[data-id="${msg.nodeId}"][data-kind="name"][data-prop="${cssEscape(msg.oldName)}"]`
+        );
+        if (propItem) {
+          propItem.dataset.pendingToken = '';
+          propItem.remove();
+        }
+        updatePropertyStats();
+        break;
+      case 'prop-value-renamed':
+        const propValItem = document.querySelector(
+          `.item[data-id="${msg.nodeId}"][data-kind="value"][data-prop="${cssEscape(msg.propName)}"][data-value="${cssEscape(msg.oldValue)}"]`
+        );
+        if (propValItem) {
+          propValItem.dataset.pendingToken = '';
+          propValItem.remove();
+        }
+        updatePropertyStats();
+        break;
+      case 'prop-rename-failed':
+        const propStatus = document.querySelector(`.rename-status[data-id="${msg.nodeId}"]`);
+        if (propStatus) propStatus.textContent = msg.message || 'Rename failed.';
+        let propFailed = null;
+        if (msg.oldName) {
+          propFailed = document.querySelector(
+            `.item[data-id="${msg.nodeId}"][data-kind="name"][data-prop="${cssEscape(msg.oldName)}"]`
+          );
+        } else if (msg.propName) {
+          propFailed = document.querySelector(
+            `.item[data-id="${msg.nodeId}"][data-kind="value"][data-prop="${cssEscape(msg.propName)}"][data-value="${cssEscape(msg.oldValue || '')}"]`
+          );
+        } else {
+          propFailed = document.querySelector(`.item[data-id="${msg.nodeId}"]`);
+        }
+        if (propFailed) {
+          propFailed.dataset.pendingToken = '';
+          propFailed.querySelectorAll('.apply-rename-btn')
+            .forEach(b => { b.disabled = false; b.textContent = 'Apply'; });
+        }
+        break;
+      case 'variable-bound':
+        const missedItem = document.querySelector(`.missed-item[data-id="${msg.nodeId}"][data-key="${cssEscape(msg.propertyKey)}"]`);
+        if (missedItem) missedItem.remove();
+        if (typeof updateGroupStatus === 'function') updateGroupStatus();
+        if (typeof updateFixAllVarsState === 'function') updateFixAllVarsState();
+        break;
+      case 'variable-bind-failed':
+        const missedStatus = document.querySelector(`.missed-item[data-id="${msg.nodeId}"][data-key="${cssEscape(msg.propertyKey)}"] .rename-status`);
+        if (missedStatus) missedStatus.textContent = msg.message || 'Apply failed.';
+        const missedApply = document.querySelector(`.missed-item[data-id="${msg.nodeId}"][data-key="${cssEscape(msg.propertyKey)}"] .apply-var-btn`);
+        if (missedApply) {
+          missedApply.disabled = false;
+          missedApply.textContent = 'Apply';
+        }
+        break;
+      case 'rename-failed':
+        const renameStatus = document.querySelector(`.rename-status[data-id="${msg.nodeId}"]`);
+        if (renameStatus) renameStatus.textContent = msg.message || 'Rename failed.';
+        const failedItem = document.querySelector(`.item[data-id="${msg.nodeId}"]`);
+        if (failedItem) {
+          failedItem.querySelectorAll('.apply-rename-btn')
+            .forEach(b => { b.disabled = false; b.textContent = 'Apply'; });
+        }
+        break;
+      case 'node-deleted':
+        const deletedItem = document.querySelector(`.item[data-id="${msg.nodeId}"]`);
+        if (deletedItem) {
+          const itemEl = deletedItem;
+          deletedItem.remove();
+          updateHiddenCountsAfterDelete(itemEl);
+        }
+        showHiddenSuccess('Layer deleted');
+        break;
+      case 'code-version':
+        if (diagBanner && msg.version) {
+          diagBanner.textContent = `Diagnostics: UI ${UI_VERSION} / code ${msg.version}`;
+        }
+        break;
+      case 'error':
+        setScanning(false);
+        showProgress(100, '');
+        // Show error in the active tab
+        const activeTab = document.querySelector('.tab-content.active');
+        const resultsDiv = activeTab.querySelector('[id$="Results"]');
+        if (resultsDiv) {
+          resultsDiv.innerHTML = `<div class="error-msg">${esc(msg.message)}</div>` + resultsDiv.innerHTML;
+        }
+        break;
+    }
+  };
+
+  function cssEscape(value) {
+    if (typeof CSS !== 'undefined' && CSS.escape) return CSS.escape(String(value));
+    return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  }
+
+  // ---- Stats updater ----
+  function updateNameStats() {
+    const nameResults = document.getElementById('nameResults');
+    if (!nameResults) return;
+    const total = Number(nameResults.dataset.total || '0');
+    const items = nameResults.querySelectorAll('.name-item');
+    const issues = items.length;
+    const clean = Math.max(total - issues, 0);
+    const cleanRate = total > 0 ? Math.round((clean / total) * 100) : 100;
+    const statNums = nameResults.querySelectorAll('.summary-bar .stat-num');
+    if (statNums.length >= 3) {
+      statNums[0].textContent = total.toLocaleString();
+      statNums[1].textContent = cleanRate + '%';
+      statNums[1].style.color = cleanRate >= 80 ? '#14AE5C' : '#FFA629';
+      statNums[2].textContent = String(issues);
+      statNums[2].style.color = issues === 0 ? '#14AE5C' : '#F24822';
+    }
+
+    nameResults.querySelectorAll('.section').forEach(section => {
+      const sectionItems = section.querySelectorAll('.name-item').length;
+      const badge = section.querySelector('.section-header .badge');
+      if (badge) {
+        badge.textContent = String(sectionItems);
+        badge.classList.remove('badge-error', 'badge-warning', 'badge-info', 'badge-success');
+        badge.classList.add(sectionItems === 0 ? 'badge-success' : (badge.dataset.original || 'badge-error'));
+      }
+      const status = section.querySelector('.section-status');
+      const selectAllWrap = section.querySelector('.select-all-wrapper');
+      if (sectionItems === 0) {
+        if (status) status.textContent = 'All the instances clean now';
+        if (selectAllWrap) selectAllWrap.style.display = 'none';
+      } else {
+        if (status) status.textContent = '';
+        if (selectAllWrap) selectAllWrap.style.display = 'flex';
+      }
+    });
+  }
+
+  function updatePropertyStats() {
+    const propResults = document.getElementById('propResults');
+    if (!propResults) return;
+    const total = Number(propResults.dataset.total || '0');
+    const items = propResults.querySelectorAll('.name-item');
+    const issues = items.length;
+    const clean = Math.max(total - issues, 0);
+    const cleanRate = total > 0 ? Math.round((clean / total) * 100) : 100;
+    const statNums = propResults.querySelectorAll('.summary-bar .stat-num');
+    if (statNums.length >= 3) {
+      statNums[0].textContent = total.toLocaleString();
+      statNums[1].textContent = cleanRate + '%';
+      statNums[1].style.color = cleanRate >= 80 ? '#14AE5C' : '#FFA629';
+      statNums[2].textContent = String(issues);
+      statNums[2].style.color = issues === 0 ? '#14AE5C' : '#F24822';
+    }
+
+    propResults.querySelectorAll('.section').forEach(section => {
+      const sectionItems = section.querySelectorAll('.name-item').length;
+      const badge = section.querySelector('.section-header .badge');
+      if (badge) {
+        badge.textContent = String(sectionItems);
+        badge.classList.remove('badge-error', 'badge-warning', 'badge-info', 'badge-success');
+        badge.classList.add(sectionItems === 0 ? 'badge-success' : (badge.dataset.original || 'badge-warning'));
+      }
+      const status = section.querySelector('.section-status');
+      const selectAllWrap = section.querySelector('.select-all-wrapper');
+      if (sectionItems === 0) {
+        if (status) status.textContent = 'All the instances clean now';
+        if (selectAllWrap) selectAllWrap.style.display = 'none';
+      } else {
+        if (status) status.textContent = '';
+        if (selectAllWrap) selectAllWrap.style.display = 'flex';
+      }
+    });
+  }
+
+  function schedulePropTimeout(item, statusEl, applyBtn) {
+    const token = String(Date.now()) + Math.random().toString(16).slice(2);
+    item.dataset.pendingToken = token;
+    window.setTimeout(() => {
+      if (item.dataset.pendingToken !== token) return;
+      const st = statusEl || item.querySelector('.rename-status');
+      if (st) st.textContent = 'Rename did not complete.';
+      if (applyBtn) {
+        applyBtn.disabled = false;
+        applyBtn.textContent = 'Apply';
+      }
+      item.dataset.pendingToken = '';
+    }, 3000);
+  }
+
+  function bindPropertyHandlers() {
+    const propResults = document.getElementById('propResults');
+    if (!propResults) return;
+
+    const updateFixAllPropsState = () => {
+      const checked = propResults.querySelectorAll('.name-item .select-checkbox input[data-id]:checked');
+      const hasChecked = checked.length > 0;
+      const fixAllBar = document.querySelector('.fix-all-bar.props');
+      const fixAllBtn = document.getElementById('btnFixAllProps');
+      if (fixAllBar) fixAllBar.style.display = hasChecked ? 'block' : 'none';
+      if (fixAllBtn) {
+        fixAllBtn.disabled = !hasChecked;
+        if (hasChecked && fixAllBtn.dataset.state !== 'updated') {
+          fixAllBtn.textContent = 'Fix All';
+        }
+        if (!hasChecked) {
+          fixAllBtn.textContent = 'Fix All';
+          fixAllBtn.dataset.state = '';
+        }
+      }
+    };
+
+    propResults.querySelectorAll('.select-checkbox input[data-id]').forEach(input => input.addEventListener('change', () => {
+      if (input.dataset.internal === '1') {
+        input.dataset.internal = '';
+        return;
+      }
+      if (input.checked) {
+        postToPlugin({ type: 'select-node', nodeId: input.dataset.id });
+      } else {
+        postToPlugin({ type: 'deselect-node', nodeId: input.dataset.id });
+        const section = input.closest('.section');
+        const selectAll = section ? section.querySelector('.select-all-checkbox') : null;
+        const label = section ? section.querySelector('.select-all-label') : null;
+        if (selectAll) {
+          selectAll.dataset.internal = '1';
+          selectAll.checked = false;
+          if (label) label.textContent = 'Select all';
+        }
+      }
+      updateFixAllPropsState();
+    }));
+
+    propResults.querySelectorAll('.select-all-checkbox').forEach(input => input.addEventListener('change', () => {
+      if (input.dataset.internal === '1') {
+        input.dataset.internal = '';
+        return;
+      }
+      const section = input.closest('.section');
+      if (!section) return;
+      const label = section.querySelector('.select-all-label');
+      const checkboxes = section.querySelectorAll('.name-item .select-checkbox input[data-id]');
+      const ids = [];
+      checkboxes.forEach(cb => {
+        cb.dataset.internal = '1';
+        cb.checked = input.checked;
+        if (cb.dataset.id) ids.push(cb.dataset.id);
+      });
+      if (label) label.textContent = input.checked ? 'Deselect all' : 'Select all';
+      if (input.checked && ids.length > 0) {
+        postToPlugin({ type: 'select-nodes', nodeIds: ids });
+      }
+      if (!input.checked && ids.length > 0) {
+        postToPlugin({ type: 'deselect-nodes', nodeIds: ids });
+        postToPlugin({ type: 'clear-selection' });
+      }
+      updateFixAllPropsState();
+    }));
+
+    propResults.querySelectorAll('.apply-rename-btn').forEach(b => b.addEventListener('click', () => {
+      const item = b.closest('.item');
+      if (!item) return;
+      const input = item.querySelector('.rename-input');
+      if (!input) return;
+      const newValue = input.value.trim();
+      if (newValue.length === 0) return;
+      const kind = item.dataset.kind;
+      const propName = item.dataset.prop;
+      const valueName = item.dataset.value;
+      if (kind === 'name') {
+        postToPlugin({ type: 'rename-prop-name', nodeId: b.dataset.id, oldName: propName, newName: newValue });
+      } else {
+        postToPlugin({ type: 'rename-prop-value', nodeId: b.dataset.id, propName, oldValue: valueName, newValue });
+      }
+      b.disabled = true;
+      b.textContent = '...';
+      const status = item.querySelector(`.rename-status[data-id="${b.dataset.id}"]`);
+      if (status) status.textContent = 'Renaming...';
+      schedulePropTimeout(item, status, b);
+    }));
+
+    updateFixAllPropsState();
+    updatePropertyStats();
+  }
+
+  // ---- Fix All (Properties) ----
+  const fixAllPropsBtn = document.getElementById('btnFixAllProps');
+  if (fixAllPropsBtn) {
+    fixAllPropsBtn.addEventListener('click', () => {
+      const container = document.getElementById('propResults');
+      if (!container) return;
+      const checked = container.querySelectorAll('.name-item .select-checkbox input[data-id]:checked');
+      if (checked.length === 0) return;
+      fixAllPropsBtn.textContent = 'All instances updated';
+      fixAllPropsBtn.dataset.state = 'updated';
+      checked.forEach(cb => {
+        const item = cb.closest('.item');
+        if (!item) return;
+        const input = item.querySelector('.rename-input');
+        if (!input) return;
+        const newValue = input.value.trim();
+        if (newValue.length === 0) return;
+        const kind = item.dataset.kind;
+        const propName = item.dataset.prop;
+        const valueName = item.dataset.value;
+        if (kind === 'name') {
+          postToPlugin({ type: 'rename-prop-name', nodeId: cb.dataset.id, oldName: propName, newName: newValue });
+        } else {
+          postToPlugin({ type: 'rename-prop-value', nodeId: cb.dataset.id, propName, oldValue: valueName, newValue });
+        }
+        const applyBtn = item.querySelector('.apply-rename-btn');
+        if (applyBtn) {
+          applyBtn.disabled = true;
+          applyBtn.textContent = '...';
+        }
+        const status = item.querySelector(`.rename-status[data-id="${cb.dataset.id}"]`);
+        if (status) status.textContent = 'Renaming...';
+        schedulePropTimeout(item, status, applyBtn);
+      });
+      container.querySelectorAll('.select-all-checkbox:checked').forEach(cb => {
+        cb.checked = false;
+        const section = cb.closest('.section');
+        const label = section ? section.querySelector('.select-all-label') : null;
+        if (label) label.textContent = 'Select all';
+      });
+      setTimeout(() => {
+        if (fixAllPropsBtn.dataset.state === 'updated') {
+          fixAllPropsBtn.dataset.state = '';
+          fixAllPropsBtn.textContent = 'Fix All';
+          updatePropertyStats();
+        }
+      }, 800);
+    });
+  }
+
+  // ---- Fix All (Variables) ----
+  const fixAllVarsBtn = document.getElementById('btnFixAllVars');
+  if (fixAllVarsBtn) {
+    fixAllVarsBtn.addEventListener('click', () => {
+      const container = document.getElementById('varResults');
+      if (!container) return;
+      const checked = container.querySelectorAll('.missed-item .select-checkbox input[data-id]:checked');
+      if (checked.length === 0) return;
+      fixAllVarsBtn.textContent = 'All instances updated';
+      fixAllVarsBtn.dataset.state = 'updated';
+      checked.forEach(cb => {
+        const item = cb.closest('.missed-item');
+        if (!item) return;
+        const input = item.querySelector('.rename-input');
+        if (!input) return;
+        const variableName = input.value.trim();
+        if (!variableName || variableName === '0') return;
+        const suggestedId = input.dataset.varId || '';
+        const suggestedName = input.dataset.varName || '';
+        const variableId = variableName === suggestedName ? suggestedId : '';
+        postToPlugin({
+          type: 'bind-variable',
+          nodeId: cb.dataset.id,
+          propertyKey: item.dataset.key,
+          variableId,
+          variableName,
+        });
+        const applyBtn = item.querySelector('.apply-var-btn');
+        if (applyBtn) {
+          applyBtn.disabled = true;
+          applyBtn.textContent = '...';
+        }
+        const status = item.querySelector(`.rename-status[data-id="${cb.dataset.id}"]`);
+        if (status) status.textContent = 'Applying...';
+      });
+      container.querySelectorAll('.missed-item .select-checkbox input[data-id]').forEach(cb => {
+        cb.checked = false;
+      });
+      postToPlugin({ type: 'clear-selection' });
+      setTimeout(() => {
+        if (fixAllVarsBtn.dataset.state === 'updated') {
+          fixAllVarsBtn.dataset.state = '';
+          fixAllVarsBtn.textContent = 'Fix All';
+          const anyChecked = container.querySelectorAll('.missed-item .select-checkbox input[data-id]:checked').length > 0;
+          fixAllVarsBtn.disabled = !anyChecked;
+          if (container.querySelectorAll('.missed-item').length === 0) {
+            fixAllVarsBtn.textContent = 'All instances clean now';
+            fixAllVarsBtn.disabled = true;
+          }
+        }
+      }, 800);
+    });
+  }
+
+  // ---- Fix All ----
+  const fixAllBtn = document.getElementById('btnFixAll');
+  if (fixAllBtn) {
+    fixAllBtn.addEventListener('click', () => {
+      const container = document.getElementById('nameResults');
+      if (!container) return;
+      const checked = container.querySelectorAll('.name-item .select-checkbox input[data-id]:checked');
+      if (checked.length === 0) {
+        if (diagBanner) diagBanner.textContent = `Diagnostics: UI ${UI_VERSION} / code ${diagBanner.textContent.split(' / code ')[1] || '…'} | Fix all: 0 selected`;
+        return;
+      }
+      fixAllBtn.textContent = 'All instances updated';
+      fixAllBtn.dataset.state = 'updated';
+      checked.forEach(cb => {
+        const item = cb.closest('.item');
+        if (!item) return;
+        const input = item.querySelector('.rename-input');
+        if (!input) return;
+        const newName = input.value.trim();
+        if (newName.length === 0) return;
+        postToPlugin({ type: 'rename-node', nodeId: cb.dataset.id, newName });
+        const applyBtn = item.querySelector('.apply-rename-btn');
+        if (applyBtn) {
+          applyBtn.disabled = true;
+          applyBtn.textContent = '...';
+        }
+        const status = item.querySelector(`.rename-status[data-id="${cb.dataset.id}"]`);
+        if (status) status.textContent = 'Renaming...';
+      });
+      container.querySelectorAll('.select-all-checkbox:checked').forEach(cb => {
+        cb.checked = false;
+        const section = cb.closest('.section');
+        const label = section ? section.querySelector('.select-all-label') : null;
+        if (label) label.textContent = 'Select all';
+      });
+      setTimeout(() => {
+        if (fixAllBtn.dataset.state === 'updated') {
+          fixAllBtn.dataset.state = '';
+          fixAllBtn.textContent = 'Fix All';
+          const anyChecked = container.querySelectorAll('.name-item .select-checkbox input[data-id]:checked').length > 0;
+          fixAllBtn.disabled = !anyChecked;
+          updateNameStats();
+        }
+      }, 800);
+    });
+  }
+</script>
+</body>
+</html>

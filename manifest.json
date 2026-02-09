@@ -1,0 +1,13 @@
+{
+  "name": "CLOS-UI",
+  "id": "design-spellcheck-ids-hackathon",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "documentAccess": "dynamic-page",
+  "editorType": ["figma"],
+  "permissions": ["teamlibrary"],
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  }
+}
